@@ -26,4 +26,5 @@ dist-electron
 *.sw?
 
 # Database
+clinic.db
 
