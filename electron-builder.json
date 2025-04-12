@@ -2,7 +2,6 @@
   "appId": "com.dental-app.prepare",
   "files": ["dist-electron/**/*", "dist-react/**/*"],
   "extraResources": [
-    "dist-electron/preload.js",
     {
       "from": "clinic.db",
       "to": "clinic.db"
