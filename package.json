@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "npm-run-all --parallel dev:react dev:electron",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
-    "init-db": "npx ts-node src/lib/database.ts",
+    "init-db": "npx ts-node ./src/lib/init.ts",
     "dev:react": "vite",
     "dev:electron": "yarn run transpile:electron; cross-env NODE_ENV=development electron .",
     "transpile:electron": "tsc --project src/electron/tsconfig.json",
