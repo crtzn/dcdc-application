@@ -1,12 +1,21 @@
 // src/electron.d.ts
 
-interface Patient {
-  id: number;
-  name: string;
-}
+import {
+  RegularPatient,
+  RegularMedicalHistory,
+  RegularTreatmentRecord,
+} from "./types/RegularPatient.js";
 
 interface ElectronAPI {
-  getPatients: () => Promise<Patient[]>;
+  addPatient: (
+    patient: Omit<RegularPatient, "patient_id">
+  ) => Promise<{ success: boolean; patient_id?: number }>;
+  addTreatmentRecord: (
+    record: RegularTreatmentRecord
+  ) => Promise<{ success: boolean }>;
+  addMedicalHistory: (
+    history: Omit<RegularMedicalHistory, "history_id">
+  ) => Promise<{ success: boolean; history_id?: number }>;
 }
 
 declare global {
