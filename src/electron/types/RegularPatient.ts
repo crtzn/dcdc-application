@@ -19,6 +19,8 @@ export interface RegularMedicalHistory {
   under_medical_treatment?: boolean;
   medical_condition?: string;
   serious_illness_or_surgery?: boolean;
+  illness_or_surgery_details?: string;
+  hospitalized?: boolean;
   hospitalization_details?: string;
   taking_medications?: boolean;
   medications_list?: string;
@@ -30,6 +32,7 @@ export interface RegularMedicalHistory {
   taking_birth_control?: boolean;
   blood_type?: string;
   blood_pressure?: string;
+  selected_conditions?: string;
 }
 
 // types/RegularTreatmentRecord.ts

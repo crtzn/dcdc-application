@@ -1,7 +1,8 @@
+// src/models/tstmgr.ts
 import { app } from "electron";
 import path from "path";
 import sqlite from "better-sqlite3";
-import fs from "fs";
+// import fs from "fs";
 import { isDev } from "../util.js";
 import {
   RegularPatient,
@@ -19,15 +20,85 @@ export function dbPath() {
   }
 
   console.log("Database path:", dbPath);
-  if (!fs.existsSync(dbPath)) {
-    throw new Error(`Database file not found at ${dbPath}`);
-  }
-
   return dbPath;
 }
 
-// Initialize database connection
-const db = sqlite(dbPath(), { verbose: console.log });
+// Initialize database connection and schema
+const db = sqlite(dbPath(), { verbose: console.log, fileMustExist: false });
+
+// Initialize database schema
+function initializeDatabase() {
+  try {
+    // Create regular_patients table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS regular_patients (
+        patient_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        birthday TEXT,
+        religion TEXT,
+        home_address TEXT,
+        sex TEXT,
+        age INTEGER,
+        nationality TEXT,
+        cellphone_number TEXT,
+        registration_date TEXT
+      )
+    `);
+
+    // Create regular_medical_history table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS regular_medical_history (
+        history_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        general_health TEXT,
+        under_medical_treatment BOOLEAN DEFAULT 0,
+        medical_condition TEXT,
+        serious_illness_or_surgery BOOLEAN DEFAULT 0,
+        illness_or_surgery_details TEXT,
+        hospitalized BOOLEAN DEFAULT 0,
+        hospitalization_details TEXT,
+        taking_medications BOOLEAN DEFAULT 0,
+        medications_list TEXT,
+        uses_tobacco BOOLEAN DEFAULT 0,
+        list_of_allergies TEXT,
+        bleeding_time TEXT,
+        is_pregnant BOOLEAN DEFAULT 0,
+        is_nursing BOOLEAN DEFAULT 0,
+        taking_birth_control BOOLEAN DEFAULT 0,
+        blood_type TEXT,
+        blood_pressure TEXT,
+        selected_conditions TEXT,
+        FOREIGN KEY (patient_id) REFERENCES regular_patients(patient_id)
+      )
+    `);
+
+    // Create regular_treatment_records table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS regular_treatment_records (
+        record_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        treatment_date TEXT,
+        tooth_number TEXT,
+        procedure TEXT,
+        dentist_name TEXT,
+        amount_charged REAL,
+        amount_paid REAL,
+        balance REAL,
+        mode_of_payment TEXT,
+        notes TEXT,
+        FOREIGN KEY (patient_id) REFERENCES regular_patients(patient_id)
+      )
+    `);
+
+    console.log("Database schema initialized successfully.");
+  } catch (error) {
+    console.error("Error initializing database schema:", error);
+    throw error;
+  }
+}
+
+// Call initializeDatabase when the module is loaded
+initializeDatabase();
 
 // Add a new patient
 export function addPatient(patient: Omit<RegularPatient, "patient_id">): {
@@ -99,28 +170,32 @@ export function addMedicalHistory(
     const stmt = db.prepare(`
       INSERT INTO regular_medical_history (
         patient_id, general_health, under_medical_treatment, medical_condition,
-        serious_illness_or_surgery, hospitalization_details, taking_medications,
-        medications_list, uses_tobacco, list_of_allergies, bleeding_time,
-        is_pregnant, is_nursing, taking_birth_control, blood_type, blood_pressure
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        serious_illness_or_surgery, illness_or_surgery_details, hospitalized,
+        hospitalization_details, taking_medications, medications_list, uses_tobacco,
+        list_of_allergies, bleeding_time, is_pregnant, is_nursing, taking_birth_control,
+        blood_type, blood_pressure, selected_conditions
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = stmt.run(
       history.patient_id,
       history.general_health || null,
-      history.under_medical_treatment || false,
+      history.under_medical_treatment ? 1 : 0,
       history.medical_condition || null,
-      history.serious_illness_or_surgery || false,
+      history.serious_illness_or_surgery ? 1 : 0,
+      history.illness_or_surgery_details || null,
+      history.hospitalized ? 1 : 0,
       history.hospitalization_details || null,
-      history.taking_medications || false,
+      history.taking_medications ? 1 : 0,
       history.medications_list || null,
-      history.uses_tobacco || false,
+      history.uses_tobacco ? 1 : 0,
       history.list_of_allergies || null,
       history.bleeding_time || null,
-      history.is_pregnant || false,
-      history.is_nursing || false,
-      history.taking_birth_control || false,
+      history.is_pregnant ? 1 : 0,
+      history.is_nursing ? 1 : 0,
+      history.taking_birth_control ? 1 : 0,
       history.blood_type || null,
-      history.blood_pressure || null
+      history.blood_pressure || null,
+      history.selected_conditions || null
     );
     return { success: true, history_id: Number(result.lastInsertRowid) };
   } catch (error) {
