@@ -1,16 +1,14 @@
-// src/components/MultiStepForm.tsx
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import RegularPatientForm from "@/components/regular/RegularPatientForm";
+import RegularPatientForm from "@/components/regular/regular-patient-form";
 import MedicalHistoryForm from "@/components/regular/medical-history-form";
-import TreatmentRecordForm from "@/components/regular/TreatmentRecord";
+import TreatmentRecordForm from "@/components/regular/treatment-record";
 import {
   RegularPatient,
   RegularMedicalHistory,
   RegularTreatmentRecord,
 } from "@/electron/types/RegularPatient";
+import { Progress } from "@/components/ui/progress";
 
 const MultiStepForm: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -24,6 +22,12 @@ const MultiStepForm: React.FC = () => {
     {}
   );
   const [, setPatientId] = useState<number | null>(null);
+
+  const steps = [
+    { label: "Patient Information", step: 1 },
+    { label: "Medical History", step: 2 },
+    { label: "Treatment Record", step: 3 },
+  ];
 
   const handleNext = (
     data: Partial<
@@ -48,7 +52,6 @@ const MultiStepForm: React.FC = () => {
     treatmentData: Partial<RegularTreatmentRecord>
   ) => {
     try {
-      // Submit Patient Info
       const patientResult = await window.api.addPatient(
         patientData as Omit<RegularPatient, "patient_id">
       );
@@ -57,7 +60,6 @@ const MultiStepForm: React.FC = () => {
       }
       const newPatientId = patientResult.patient_id;
 
-      // Submit Medical History
       const medicalHistoryWithId = {
         ...medicalHistoryData,
         patient_id: newPatientId,
@@ -69,7 +71,6 @@ const MultiStepForm: React.FC = () => {
         throw new Error("Failed to add medical history");
       }
 
-      // Submit Treatment Record
       const treatmentWithId = { ...treatmentData, patient_id: newPatientId };
       const treatmentResult = await window.api.addTreatmentRecord(
         treatmentWithId as RegularTreatmentRecord
@@ -94,32 +95,49 @@ const MultiStepForm: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl text-slate-800">
-            {step === 1 && "Patient Registration"}
-            {step === 2 && "Medical History"}
-            {step === 3 && "Treatment Record"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {step === 1 && (
-            <RegularPatientForm
-              onNext={(data) => handleNext(data, "patient")}
-            />
-          )}
-          {step === 2 && (
-            <MedicalHistoryForm
-              onNext={(data) => handleNext(data, "medicalHistory")}
-              onBack={handleBack}
-            />
-          )}
-          {step === 3 && (
-            <TreatmentRecordForm onSubmit={handleSubmit} onBack={handleBack} />
-          )}
-        </CardContent>
-      </Card>
+    <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+      {/* Progress Indicator */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          {steps.map((s) => (
+            <div
+              key={s.step}
+              className={`flex-1 text-center ${
+                step >= s.step ? "text-blue-600 font-semibold" : "text-gray-400"
+              }`}
+            >
+              <div
+                className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center ${
+                  step >= s.step ? "bg-blue-600 text-white" : "bg-gray-200"
+                }`}
+              >
+                {s.step}
+              </div>
+              <span className="text-sm mt-2 block">{s.label}</span>
+            </div>
+          ))}
+        </div>
+        <Progress value={(step / steps.length) * 100} className="h-2" />
+      </div>
+
+      {/* Form Content */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+          {steps.find((s) => s.step === step)?.label}
+        </h2>
+        {step === 1 && (
+          <RegularPatientForm onNext={(data) => handleNext(data, "patient")} />
+        )}
+        {step === 2 && (
+          <MedicalHistoryForm
+            onNext={(data) => handleNext(data, "medicalHistory")}
+            onBack={handleBack}
+          />
+        )}
+        {step === 3 && (
+          <TreatmentRecordForm onSubmit={handleSubmit} onBack={handleBack} />
+        )}
+      </div>
     </div>
   );
 };

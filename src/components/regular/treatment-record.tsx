@@ -1,12 +1,6 @@
 // src/components/TreatmentRecordForm.tsx
 import React from "react";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -73,11 +67,6 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
 
   return (
     <Card className="w-full max-w-3xl mx-auto shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-2xl font-semibold text-gray-800">
-          Treatment Record
-        </CardTitle>
-      </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="space-y-8">
