@@ -9,6 +9,10 @@ import {
   RegularMedicalHistory,
   RegularTreatmentRecord,
 } from "../types/RegularPatient.js";
+import {
+  OrthodonticPatient,
+  OrthodonticTreatmentRecord,
+} from "../types/OrthodonticPatient.js";
 
 // Get database path
 export function dbPath() {
@@ -33,7 +37,7 @@ function initializeDatabase() {
     db.exec(`
       CREATE TABLE IF NOT EXISTS regular_patients (
         patient_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
+        name TEXT NOT NULL UNIQUE,
         birthday TEXT,
         religion TEXT,
         home_address TEXT,
@@ -90,6 +94,49 @@ function initializeDatabase() {
       )
     `);
 
+    // Create orthodontic_patients table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS orthodontic_patients (
+        patient_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date_of_exam TEXT,
+        name TEXT NOT NULL UNIQUE,
+        occupation TEXT,
+        birthday TEXT,
+        parent_guardian_name TEXT,
+        address TEXT,
+        telephone_home TEXT,
+        telephone_business TEXT,
+        cellphone_number TEXT,
+        email TEXT,
+        chart TEXT,
+        sex TEXT,
+        age INTEGER,
+        chief_complaint TEXT,
+        past_medical_dental_history TEXT,
+        prior_orthodontic_history TEXT,
+        under_treatment_or_medication BOOLEAN DEFAULT 0,
+        congenital_abnormalities BOOLEAN DEFAULT 0,
+        temporomandibular_joint_problems BOOLEAN DEFAULT 0,
+        oral_hygiene TEXT,
+        gingival_tissues TEXT
+      )
+    `);
+
+    // Create orthodontic_treatment_records table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS orthodontic_treatment_records (
+        record_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        appt_no TEXT,
+        date TEXT,
+        arch_wire TEXT,
+        procedure TEXT,
+        amount_paid REAL,
+        next_schedule TEXT,
+        FOREIGN KEY (patient_id) REFERENCES orthodontic_patients(patient_id)
+      )
+    `);
+
     console.log("Database schema initialized successfully.");
   } catch (error) {
     console.error("Error initializing database schema:", error);
@@ -100,12 +147,49 @@ function initializeDatabase() {
 // Call initializeDatabase when the module is loaded
 initializeDatabase();
 
+//get all regular patients
+
+export function getAllRegularPatients(): {
+  success: boolean;
+  total_count?: number;
+  error?: string;
+} {
+  try {
+    const countStmt = db.prepare(
+      `SELECT COUNT(*) as total FROM regular_patients`
+    );
+    const result = countStmt.get() as { total: number };
+    const total_count = result.total;
+
+    console.log(`This is the count of regular Patients ${total_count}`);
+
+    return {
+      success: true,
+      total_count,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error fetching regular patients count:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
 // Add a new patient
 export function addPatient(patient: Omit<RegularPatient, "patient_id">): {
   success: boolean;
   patient_id?: number;
+  error?: string;
 } {
   try {
+    if (checkRegularPatientNameExists(patient.name)) {
+      return {
+        success: false,
+        error: `A patient named "${patient.name}" already exists.`,
+      };
+    }
     const stmt = db.prepare(`
       INSERT INTO regular_patients (
         name, birthday, religion, home_address, sex, age, nationality, cellphone_number, registration_date
@@ -125,7 +209,20 @@ export function addPatient(patient: Omit<RegularPatient, "patient_id">): {
     return { success: true, patient_id: Number(result.lastInsertRowid) };
   } catch (error) {
     console.error("Error adding patient:", error);
-    return { success: false };
+    return {
+      success: false,
+      error: "Database error while adding patient.",
+    };
+  }
+}
+
+export function checkRegularPatientNameExists(name: string): boolean {
+  try {
+    const stmt = db.prepare("SELECT 1 FROM regular_patients WHERE name = ?");
+    return stmt.get(name) !== undefined; // Returns true if name exists
+  } catch (error) {
+    console.error("Error checking patient name:", error);
+    return false;
   }
 }
 
@@ -201,5 +298,101 @@ export function addMedicalHistory(
   } catch (error) {
     console.error("Error adding medical history:", error);
     return { success: false };
+  }
+}
+
+// ====== ORTHODONTIC PATIENTS ======
+// Add an orthodontic patient
+export function addOrthodonticPatient(
+  patient: Omit<OrthodonticPatient, "patient_id">
+): {
+  success: boolean;
+  patient_id?: number;
+  error?: string;
+} {
+  try {
+    if (checkOrthoPatientNameExists(patient.name)) {
+      return {
+        success: false,
+        error: `A patient named "${patient.name}" already exists.`,
+      };
+    }
+    const stmt = db.prepare(`
+      INSERT INTO orthodontic_patients (
+        date_of_exam, name, occupation, birthday, parent_guardian_name, address,
+        telephone_home, telephone_business, cellphone_number, email, chart, sex, age,
+        chief_complaint, past_medical_dental_history, prior_orthodontic_history,
+        under_treatment_or_medication, congenital_abnormalities, temporomandibular_joint_problems,
+        oral_hygiene, gingival_tissues
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(
+      patient.date_of_exam || null,
+      patient.name,
+      patient.occupation || null,
+      patient.birthday || null,
+      patient.parent_guardian_name || null,
+      patient.address || null,
+      patient.telephone_home || null,
+      patient.telephone_business || null,
+      patient.cellphone_number || null,
+      patient.email || null,
+      patient.chart || null,
+      patient.sex || null,
+      patient.age || null,
+      patient.chief_complaint || null,
+      patient.past_medical_dental_history || null,
+      patient.prior_orthodontic_history || null,
+      patient.under_treatment_or_medication ? 1 : 0,
+      patient.congenital_abnormalities ? 1 : 0,
+      patient.tmj_problems ? 1 : 0,
+      patient.oral_hygiene || null,
+      patient.gingival_tissues || null
+    );
+    return { success: true, patient_id: Number(result.lastInsertRowid) };
+  } catch (error) {
+    console.error("Error adding orthodontic patient:", error);
+    return { success: false };
+  }
+}
+
+// Add orthodontic treatment record
+export function addOrthodonticTreatmentRecord(
+  record: OrthodonticTreatmentRecord
+): {
+  success: boolean;
+} {
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO orthodontic_treatment_records (
+        patient_id, appt_no, date, arch_wire, procedure, amount_paid, next_schedule
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(
+      record.patient_id,
+      record.appointment_number || null,
+      record.date || null,
+      record.arch_wire || null,
+      record.procedure || null,
+      record.amount_paid || null,
+      record.next_schedule || null
+    );
+    return { success: true };
+  } catch (error) {
+    console.error("Error adding orthodontic treatment record:", error);
+    return { success: false };
+  }
+}
+
+// Check if orthodontic patient name exists
+export function checkOrthoPatientNameExists(name: string): boolean {
+  try {
+    const stmt = db.prepare(
+      "SELECT 1 FROM orthodontic_patients WHERE name = ?"
+    );
+    return stmt.get(name) !== undefined;
+  } catch (error) {
+    console.error("Error checking ortho patient name:", error);
+    return false;
   }
 }

@@ -6,12 +6,21 @@ import {
   addPatient,
   addTreatmentRecord,
   addMedicalHistory,
+  addOrthodonticPatient,
+  addOrthodonticTreatmentRecord,
+  checkRegularPatientNameExists,
+  checkOrthoPatientNameExists,
+  getAllRegularPatients,
 } from "./models/tstmgr.js";
 import {
   RegularPatient,
   RegularMedicalHistory,
   RegularTreatmentRecord,
 } from "./types/RegularPatient.js";
+import {
+  OrthodonticPatient,
+  OrthodonticTreatmentRecord,
+} from "./types/OrthodonticPatient.js";
 
 app.on("ready", () => {
   const mainWindow = new BrowserWindow({
@@ -62,3 +71,65 @@ ipcMain.handle(
     }
   }
 );
+
+ipcMain.handle("get-all-regular-patients", async () => {
+  try {
+    return await getAllRegularPatients();
+  } catch (error) {
+    console.error("IPC get-all-regular-patients error:", error);
+    return { success: false, error: String(error) };
+  }
+});
+
+// ====== ORTHODONTIC PATIENTS ======
+
+ipcMain.handle(
+  "add-orthodontic-patient",
+  async (
+    _event,
+    patient: Omit<
+      OrthodonticPatient,
+      "patient_id" | "created_at" | "updated_at"
+    >
+  ) => {
+    try {
+      return await addOrthodonticPatient(patient);
+    } catch (error) {
+      console.error("IPC add-orthodontic-patient error:", error);
+      return { success: false };
+    }
+  }
+);
+
+ipcMain.handle(
+  "add-orthodontic-treatment-record",
+  async (
+    _event,
+    record: Omit<OrthodonticTreatmentRecord, "record_id" | "created_at">
+  ) => {
+    try {
+      return await addOrthodonticTreatmentRecord(record);
+    } catch (error) {
+      console.error("IPC add-orthodontic-treatment-record error:", error);
+      return { success: false };
+    }
+  }
+);
+
+ipcMain.handle("check-patient-name", async (_event, name: string) => {
+  try {
+    return await checkRegularPatientNameExists(name);
+  } catch (error) {
+    console.error("IPC check-patient-name error:", error);
+    return false;
+  }
+});
+
+ipcMain.handle("check-ortho-patient-name", async (_event, name: string) => {
+  try {
+    return await checkOrthoPatientNameExists(name);
+  } catch (error) {
+    console.error("IPC check-ortho-patient-name error:", error);
+    return false;
+  }
+});

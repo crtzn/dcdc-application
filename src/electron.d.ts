@@ -16,6 +16,22 @@ interface ElectronAPI {
   addMedicalHistory: (
     history: Omit<RegularMedicalHistory, "history_id">
   ) => Promise<{ success: boolean; history_id?: number }>;
+  addOrthodonticPatient: (
+    patient: Omit<
+      OrthodonticPatient,
+      "patient_id" | "created_at" | "updated_at"
+    >
+  ) => Promise<{ success: boolean; patient_id?: number }>;
+  addOrthodonticTreatmentRecord: (
+    record: Omit<OrthodonticTreatmentRecord, "record_id" | "created_at">
+  ) => Promise<{ success: boolean }>;
+  checkPatientName: (name: string) => Promise<boolean>;
+  checkOrthoPatientName: (name: string) => Promise<boolean>;
+  getAllRegularPatients: () => Promise<{
+    success: boolean;
+    total_count?: number;
+    error?: string;
+  }>;
 }
 
 declare global {
