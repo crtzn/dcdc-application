@@ -9,7 +9,10 @@ import {
   OrthodonticPatient,
   OrthodonticTreatmentRecord,
 } from "./types/OrthodonticPatient.js";
-import { getAllRegularPatients } from "./models/tstmgr.js";
+import {
+  getAllOrthodonticPatients,
+  getAllRegularPatients,
+} from "./models/tstmgr.js";
 
 electron.contextBridge.exposeInMainWorld("api", {
   addPatient: (patient: Omit<RegularPatient, "patient_id">) =>
@@ -32,4 +35,12 @@ electron.contextBridge.exposeInMainWorld("api", {
   checkOrthoPatientName: (name: string) =>
     ipcRenderer.invoke("check-ortho-patient-name", name),
   getAllRegularPatients: () => ipcRenderer.invoke("get-all-regular-patients"),
+  getAllOrthodonticPatients: () =>
+    ipcRenderer.invoke("get-all-orthodontic-patients"),
+  getAllPatients: () => ipcRenderer.invoke("get-all-patients"),
+  onPatientAdded: (callback: () => void) => {
+    ipcRenderer.on("patient-added", callback);
+    // Return cleanup function
+    return () => ipcRenderer.removeListener("patient-added", callback);
+  },
 });

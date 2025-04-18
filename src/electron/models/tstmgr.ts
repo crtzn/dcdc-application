@@ -396,3 +396,65 @@ export function checkOrthoPatientNameExists(name: string): boolean {
     return false;
   }
 }
+
+export function getAllOrthodonticPatients(): {
+  success: boolean;
+  total_count?: number;
+  error?: string;
+} {
+  try {
+    const countStmt = db.prepare(
+      `SELECT COUNT(*) as total FROM orthodontic_patients`
+    );
+    const result = countStmt.get() as { total: number };
+    const total_count = result.total;
+
+    console.log(`Total orthodontic patients: ${total_count}`);
+
+    return {
+      success: true,
+      total_count,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error fetching orthodontic patients count:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+// New getAllPatients
+export function getAllPatients(): {
+  success: boolean;
+  total_count?: number;
+  error?: string;
+} {
+  try {
+    // Query both tables and sum the counts
+    const regularStmt = db.prepare(
+      `SELECT COUNT(*) as total FROM regular_patients`
+    );
+    const orthoStmt = db.prepare(
+      `SELECT COUNT(*) as total FROM orthodontic_patients`
+    );
+    const regularResult = regularStmt.get() as { total: number };
+    const orthoResult = orthoStmt.get() as { total: number };
+    const total_count = regularResult.total + orthoResult.total;
+
+    console.log(`Total overall patients: ${total_count}`);
+
+    return {
+      success: true,
+      total_count,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error fetching overall patients count:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}

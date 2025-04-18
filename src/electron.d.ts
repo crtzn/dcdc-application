@@ -7,6 +7,7 @@ import {
 } from "./types/RegularPatient.js";
 
 interface ElectronAPI {
+  getAllOrthodonticPatients(): unknown;
   addPatient: (
     patient: Omit<RegularPatient, "patient_id">
   ) => Promise<{ success: boolean; patient_id?: number }>;
@@ -32,6 +33,17 @@ interface ElectronAPI {
     total_count?: number;
     error?: string;
   }>;
+  getAllOrthodonticPatients: () => Promise<{
+    success: boolean;
+    total_count?: number;
+    error?: string;
+  }>;
+  getAllPatients: () => Promise<{
+    success: boolean;
+    total_count?: number;
+    error?: string;
+  }>;
+  onPatientAdded: (callback: () => void) => () => void;
 }
 
 declare global {

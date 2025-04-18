@@ -11,6 +11,8 @@ import {
   checkRegularPatientNameExists,
   checkOrthoPatientNameExists,
   getAllRegularPatients,
+  getAllOrthodonticPatients,
+  getAllPatients,
 } from "./models/tstmgr.js";
 import {
   RegularPatient,
@@ -36,14 +38,22 @@ app.on("ready", () => {
 });
 
 // IPC Handlers
+// IPC Handlers
 ipcMain.handle(
   "add-patient",
   async (_event, patient: Omit<RegularPatient, "patient_id">) => {
     try {
-      return await addPatient(patient);
+      const result = await addPatient(patient);
+      if (result.success) {
+        // Broadcast patient-added event to all renderer windows
+        BrowserWindow.getAllWindows().forEach((win) => {
+          win.webContents.send("patient-added");
+        });
+      }
+      return result;
     } catch (error) {
       console.error("IPC add-patient error:", error);
-      return { success: false };
+      return { success: false, error: String(error) };
     }
   }
 );
@@ -93,10 +103,17 @@ ipcMain.handle(
     >
   ) => {
     try {
-      return await addOrthodonticPatient(patient);
+      const result = await addOrthodonticPatient(patient);
+      if (result.success) {
+        // Broadcast patient-added event to all renderer windows
+        BrowserWindow.getAllWindows().forEach((win) => {
+          win.webContents.send("patient-added");
+        });
+      }
+      return result;
     } catch (error) {
       console.error("IPC add-orthodontic-patient error:", error);
-      return { success: false };
+      return { success: false, error: String(error) };
     }
   }
 );
@@ -131,5 +148,23 @@ ipcMain.handle("check-ortho-patient-name", async (_event, name: string) => {
   } catch (error) {
     console.error("IPC check-ortho-patient-name error:", error);
     return false;
+  }
+});
+
+ipcMain.handle("get-all-orthodontic-patients", async () => {
+  try {
+    return await getAllOrthodonticPatients();
+  } catch (error) {
+    console.error("IPC get-all-orthodontic-patients error:", error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle("get-all-patients", async () => {
+  try {
+    return await getAllPatients();
+  } catch (error) {
+    console.error("IPC get-all-patients error:", error);
+    return { success: false, error: String(error) };
   }
 });
