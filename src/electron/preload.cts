@@ -9,10 +9,6 @@ import {
   OrthodonticPatient,
   OrthodonticTreatmentRecord,
 } from "./types/OrthodonticPatient.js";
-import {
-  getAllOrthodonticPatients,
-  getAllRegularPatients,
-} from "./models/tstmgr.js";
 
 electron.contextBridge.exposeInMainWorld("api", {
   addPatient: (patient: Omit<RegularPatient, "patient_id">) =>

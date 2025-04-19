@@ -1,3 +1,4 @@
+// src/components/patientProfile/PatientDetailsModal.tsx
 import { format } from "date-fns";
 import {
   Dialog,
@@ -17,6 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "sonner";
+import TreatmentRecordForm from "@/components/regular/treatment-record";
+import OrthodonticTreatmentRecordForm from "@/components/orthodontic/orthodontic-treatment-record";
 import {
   RegularPatient,
   RegularMedicalHistory,
@@ -26,6 +30,7 @@ import {
   OrthodonticPatient,
   OrthodonticTreatmentRecord,
 } from "@/electron/types/OrthodonticPatient";
+import { useState } from "react";
 
 interface PatientDetailsModalProps {
   patient: {
@@ -36,6 +41,7 @@ interface PatientDetailsModalProps {
   type: "Regular" | "Ortho" | null;
   isOpen: boolean;
   onClose: () => void;
+  onRefresh: () => void; // New prop to refresh patient details
 }
 
 const PatientDetailsModal = ({
@@ -43,7 +49,10 @@ const PatientDetailsModal = ({
   type,
   isOpen,
   onClose,
+  onRefresh,
 }: PatientDetailsModalProps) => {
+  const [showTreatmentForm, setShowTreatmentForm] = useState(false);
+
   if (!patient || !type) return null;
 
   const formatValue = (
@@ -62,6 +71,37 @@ const PatientDetailsModal = ({
       }
     }
     return String(value);
+  };
+
+  const handleTreatmentSubmit = async (data: any) => {
+    try {
+      let result;
+      if (type === "Regular") {
+        const treatmentData: RegularTreatmentRecord = {
+          patient_id: patient.info.patient_id!,
+          ...data,
+        };
+        result = await window.api.addTreatmentRecord(treatmentData);
+      } else {
+        const treatmentData: OrthodonticTreatmentRecord = {
+          patient_id: patient.info.patient_id!,
+          ...data,
+        };
+        result = await window.api.addOrthodonticTreatmentRecord(treatmentData);
+      }
+
+      if (result.success) {
+        toast.success("Treatment record added successfully");
+        setShowTreatmentForm(false);
+        onRefresh(); // Refresh patient details to show new record
+      } else {
+        throw new Error("Failed to add treatment record");
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      toast.error(`Error adding treatment record: ${errorMessage}`);
+    }
   };
 
   const renderPatientInfo = () => {
@@ -265,6 +305,31 @@ const PatientDetailsModal = ({
     );
   };
 
+  const renderTreatmentForm = () => {
+    if (!showTreatmentForm) return null;
+
+    return (
+      <Dialog open={showTreatmentForm} onOpenChange={setShowTreatmentForm}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Add New Treatment Record</DialogTitle>
+          </DialogHeader>
+          {type === "Regular" ? (
+            <TreatmentRecordForm
+              onSubmit={handleTreatmentSubmit}
+              onBack={() => setShowTreatmentForm(false)}
+            />
+          ) : (
+            <OrthodonticTreatmentRecordForm
+              onSubmit={handleTreatmentSubmit}
+              onBack={() => setShowTreatmentForm(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-full sm:max-w-[80rem] p-6 rounded-lg bg-white shadow-lg">
@@ -309,6 +374,14 @@ const PatientDetailsModal = ({
             </TabsContent>
           )}
           <TabsContent value="records">
+            <div className="flex justify-end mb-4">
+              <Button
+                className="bg-green-600 text-white hover:bg-green-700"
+                onClick={() => setShowTreatmentForm(true)}
+              >
+                Add Treatment Record
+              </Button>
+            </div>
             <ScrollArea className="max-h-[60vh] pr-4">
               {renderTreatmentRecords()}
             </ScrollArea>
@@ -332,6 +405,7 @@ const PatientDetailsModal = ({
           </Button>
         </DialogFooter>
       </DialogContent>
+      {renderTreatmentForm()}
     </Dialog>
   );
 };

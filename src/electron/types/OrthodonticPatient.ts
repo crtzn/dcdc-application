@@ -16,7 +16,7 @@ export interface OrthodonticPatient {
   chief_complaint: string;
   past_medical_dental_history?: string;
   prior_orthodontic_history?: string;
-  under_treatment_or_medication: boolean;
+  under_treatment_or_medication: "Yes" | "No";
   congenital_abnormalities: "Yes" | "No";
   tmj_problems: "Yes" | "No";
   oral_hygiene: "Excellent" | "Fair" | "Poor";

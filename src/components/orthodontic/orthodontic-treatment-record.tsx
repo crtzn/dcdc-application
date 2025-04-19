@@ -10,7 +10,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -24,7 +23,6 @@ const treatmentSchema = z.object({
   procedure: z.string().optional(),
   amount_paid: z.number().min(0, "Amount paid must be positive").optional(),
   next_schedule: z.string().optional(),
-  notes: z.string().optional(),
 });
 
 type TreatmentFormValues = Omit<
@@ -49,7 +47,6 @@ const OrthodonticTreatmentRecordForm: React.FC<
       procedure: "",
       amount_paid: undefined,
       next_schedule: "",
-      notes: "",
     },
   });
 
@@ -196,34 +193,6 @@ const OrthodonticTreatmentRecordForm: React.FC<
                   )}
                 />
               </div>
-            </div>
-
-            <Separator />
-
-            {/* Additional Notes */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-700 mb-4">
-                Additional Notes
-              </h3>
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">
-                      Notes
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Enter additional notes"
-                        className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-500" />
-                  </FormItem>
-                )}
-              />
             </div>
           </CardContent>
           <CardFooter className="flex justify-between mt-6">

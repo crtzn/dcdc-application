@@ -1,3 +1,4 @@
+// src/components/PatientList.tsx
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
-import PatientDetailsModal from "@/components/patientProfile/PatientModal"; // Swap with PatientDetailsDrawer if using sidebar
+import PatientDetailsModal from "@/components/patientProfile/PatientModal";
 import {
   RegularPatient,
   RegularMedicalHistory,
@@ -141,15 +142,21 @@ const PatientList = () => {
     fetchPatientDetails(patient.patient_id, patient.type);
   };
 
+  const handleRefreshPatientDetails = () => {
+    if (selectedPatient && selectedType) {
+      fetchPatientDetails(selectedPatient.info.patient_id!, selectedType);
+    }
+  };
+
   return (
-    <div className="w-full  mx-auto mt-10">
+    <div className="w-full mx-auto mt-10">
       <CardHeader>
-        <CardTitle className="text-lg text-start font-semibold  text-[#1e1e1e]">
-          <h1> Patient List</h1>
+        <CardTitle className="text-lg text-start font-semibold text-[#1e1e1e]">
+          <h1>Patient List</h1>
         </CardTitle>
       </CardHeader>
       <CardContent className="mt-10">
-        <div className="flex flex-col sm:flex-row gap-4 mb-4 ">
+        <div className="flex flex-col sm:flex-row gap-4 mb-4">
           <Input
             placeholder="Search by name..."
             value={searchName}
@@ -179,14 +186,14 @@ const PatientList = () => {
           <Button
             variant="outline"
             onClick={resetFilters}
-            className="bg-[#1e1e1e] text-white hover:bg-gray-700 hover:text-white]"
+            className="bg-[#1e1e1e] text-white hover:bg-gray-700 hover:text-white"
           >
             Reset Filters
           </Button>
           <Button
             variant="outline"
             onClick={resetSort}
-            className="bg-[#1e1e1e] text-white hover:bg-gray-700 hover:text-white]"
+            className="bg-[#1e1e1e] text-white hover:bg-gray-700 hover:text-white"
           >
             Reset Sort
           </Button>
@@ -286,6 +293,7 @@ const PatientList = () => {
             setSelectedPatient(null);
             setSelectedType(null);
           }}
+          onRefresh={handleRefreshPatientDetails} // Pass refresh function
         />
       </CardContent>
     </div>
