@@ -718,7 +718,10 @@ const PatientDetailsModal = ({
 
     return (
       <Dialog open={showTreatmentForm} onOpenChange={setShowTreatmentForm}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent
+          className="max-w-3xl"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Add New Treatment Record</DialogTitle>
           </DialogHeader>

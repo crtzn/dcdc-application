@@ -15,6 +15,10 @@ function PatientModal() {
     "regular" | "orthodontic" | null
   >(null);
 
+  const handleClose = () => {
+    setActiveForm(null);
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -24,8 +28,9 @@ function PatientModal() {
       </DialogTrigger>
       <DialogContent
         className="max-w-[90vw] sm:max-w-lg md:max-w-2xl lg:max-w-4xl p-4 sm:p-6"
-        onInteractOutside={() => setActiveForm(null)}
-        onEscapeKeyDown={() => setActiveForm(null)}
+        onInteractOutside={(e) => e.preventDefault()} // Prevent closing when clicking outside
+        onEscapeKeyDown={handleClose} // Still allow closing with Escape key
+        onCloseAutoFocus={handleClose} // Reset form when closed
       >
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-800">
