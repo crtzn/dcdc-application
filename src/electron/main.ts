@@ -13,6 +13,9 @@ import {
   getAllRegularPatients,
   getAllOrthodonticPatients,
   getAllPatients,
+  getRecentPatients,
+  getFilteredPatients,
+  getPatientDetails,
 } from "./models/tstmgr.js";
 import {
   RegularPatient,
@@ -168,3 +171,52 @@ ipcMain.handle("get-all-patients", async () => {
     return { success: false, error: String(error) };
   }
 });
+
+ipcMain.handle("get-recent-patients", async () => {
+  try {
+    return await getRecentPatients();
+  } catch (error) {
+    console.error("IPC get-recent-patients error:", error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle(
+  "get-filtered-patients",
+  async (
+    _event,
+    searchName,
+    typeFilter,
+    genderFilter,
+    sortBy,
+    sortDirection
+  ) => {
+    try {
+      return await getFilteredPatients(
+        searchName,
+        typeFilter,
+        genderFilter,
+        sortBy,
+        sortDirection
+      );
+    } catch (error) {
+      console.error("IPC get-filtered-patients error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+// Register IPC handler for getPatientDetails
+ipcMain.handle(
+  "get-patient-details",
+  async (_event, patientId: number, type: "Regular" | "Ortho") => {
+    try {
+      const result = getPatientDetails(patientId, type);
+      return result;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      return { success: false, error: errorMessage };
+    }
+  }
+);

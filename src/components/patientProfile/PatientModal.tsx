@@ -1,0 +1,339 @@
+import { format } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  RegularPatient,
+  RegularMedicalHistory,
+  RegularTreatmentRecord,
+} from "@/electron/types/RegularPatient";
+import {
+  OrthodonticPatient,
+  OrthodonticTreatmentRecord,
+} from "@/electron/types/OrthodonticPatient";
+
+interface PatientDetailsModalProps {
+  patient: {
+    info: RegularPatient | OrthodonticPatient;
+    medicalHistory?: RegularMedicalHistory[];
+    treatmentRecords?: RegularTreatmentRecord[] | OrthodonticTreatmentRecord[];
+  } | null;
+  type: "Regular" | "Ortho" | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const PatientDetailsModal = ({
+  patient,
+  type,
+  isOpen,
+  onClose,
+}: PatientDetailsModalProps) => {
+  if (!patient || !type) return null;
+
+  const formatValue = (
+    value: string | number | boolean | Date | null | undefined
+  ): string => {
+    if (value === null || value === undefined) return "N/A";
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (
+      value instanceof Date ||
+      (typeof value === "string" && value.match(/^\d{4}-\d{2}-\d{2}/))
+    ) {
+      try {
+        return format(new Date(value), "MMM dd, yyyy");
+      } catch {
+        return String(value);
+      }
+    }
+    return String(value);
+  };
+
+  const renderPatientInfo = () => {
+    const fields =
+      type === "Regular"
+        ? [
+            { key: "name", label: "Name" },
+            { key: "birthday", label: "Birthday" },
+            { key: "religion", label: "Religion" },
+            { key: "home_address", label: "Home Address" },
+            { key: "sex", label: "Gender" },
+            { key: "age", label: "Age" },
+            { key: "nationality", label: "Nationality" },
+            { key: "cellphone_number", label: "Cellphone Number" },
+            { key: "registration_date", label: "Registration Date" },
+            { key: "created_at", label: "Created At" },
+          ]
+        : [
+            { key: "date_of_exam", label: "Date of Exam" },
+            { key: "name", label: "Name" },
+            { key: "occupation", label: "Occupation" },
+            { key: "birthday", label: "Birthday" },
+            { key: "parent_guardian_name", label: "Parent/Guardian Name" },
+            { key: "address", label: "Address" },
+            { key: "telephone_home", label: "Telephone (Home)" },
+            { key: "telephone_business", label: "Telephone (Business)" },
+            { key: "cellphone_number", label: "Cellphone Number" },
+            { key: "email", label: "Email" },
+            { key: "chart", label: "Chart" },
+            { key: "sex", label: "Gender" },
+            { key: "age", label: "Age" },
+            { key: "chief_complaint", label: "Chief Complaint" },
+            {
+              key: "past_medical_dental_history",
+              label: "Past Medical/Dental History",
+            },
+            {
+              key: "prior_orthodontic_history",
+              label: "Prior Orthodontic History",
+            },
+            {
+              key: "under_treatment_or_medication",
+              label: "Under Treatment/Medication",
+            },
+            {
+              key: "congenital_abnormalities",
+              label: "Congenital Abnormalities",
+            },
+            { key: "temporomandibular_joint_problems", label: "TMJ Problems" },
+            { key: "oral_hygiene", label: "Oral Hygiene" },
+            { key: "gingival_tissues", label: "Gingival Tissues" },
+            { key: "created_at", label: "Created At" },
+          ];
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+        {fields.map(({ key, label }) => (
+          <div key={key} className="flex flex-col">
+            <span className="font-semibold text-sm text-gray-700">{label}</span>
+            <span className="text-gray-600 text-sm">
+              {formatValue(
+                (patient.info as RegularPatient | OrthodonticPatient)[
+                  key as keyof (RegularPatient | OrthodonticPatient)
+                ]
+              )}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderMedicalHistory = () => {
+    if (
+      type !== "Regular" ||
+      !patient.medicalHistory ||
+      patient.medicalHistory.length === 0
+    ) {
+      return (
+        <p className="text-gray-500 text-center p-4">
+          No medical history available.
+        </p>
+      );
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>General Health</TableHead>
+              <TableHead>Medical Condition</TableHead>
+              <TableHead>Illness/Surgery Details</TableHead>
+              <TableHead>Hospitalization Details</TableHead>
+              <TableHead>Medications List</TableHead>
+              <TableHead>Allergies</TableHead>
+              <TableHead>Blood Type</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {patient.medicalHistory.map((history) => (
+              <TableRow key={history.history_id}>
+                <TableCell>{formatValue(history.general_health)}</TableCell>
+                <TableCell>{formatValue(history.medical_condition)}</TableCell>
+                <TableCell>
+                  {formatValue(history.illness_or_surgery_details)}
+                </TableCell>
+                <TableCell>
+                  {formatValue(history.hospitalization_details)}
+                </TableCell>
+                <TableCell>{formatValue(history.medications_list)}</TableCell>
+                <TableCell>{formatValue(history.list_of_allergies)}</TableCell>
+                <TableCell>{formatValue(history.blood_type)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
+  const renderTreatmentRecords = () => {
+    if (!patient.treatmentRecords || patient.treatmentRecords.length === 0) {
+      return (
+        <p className="text-gray-500 text-center p-4">
+          No treatment records available.
+        </p>
+      );
+    }
+
+    if (type === "Regular") {
+      return (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Treatment Date</TableHead>
+                <TableHead>Tooth Number</TableHead>
+                <TableHead>Procedure</TableHead>
+                <TableHead>Dentist Name</TableHead>
+                <TableHead>Amount Charged</TableHead>
+                <TableHead>Amount Paid</TableHead>
+                <TableHead>Balance</TableHead>
+                <TableHead>Mode of Payment</TableHead>
+                <TableHead>Notes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(patient.treatmentRecords as RegularTreatmentRecord[]).map(
+                (record) => (
+                  <TableRow key={record.record_id}>
+                    <TableCell>{formatValue(record.treatment_date)}</TableCell>
+                    <TableCell>{formatValue(record.tooth_number)}</TableCell>
+                    <TableCell>{formatValue(record.procedure)}</TableCell>
+                    <TableCell>{formatValue(record.dentist_name)}</TableCell>
+                    <TableCell>{formatValue(record.amount_charged)}</TableCell>
+                    <TableCell>{formatValue(record.amount_paid)}</TableCell>
+                    <TableCell>{formatValue(record.balance)}</TableCell>
+                    <TableCell>{formatValue(record.mode_of_payment)}</TableCell>
+                    <TableCell>{formatValue(record.notes)}</TableCell>
+                  </TableRow>
+                )
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      );
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Appointment No.</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Arch Wire</TableHead>
+              <TableHead>Procedure</TableHead>
+              <TableHead>Amount Paid</TableHead>
+              <TableHead>Next Schedule</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {(patient.treatmentRecords as OrthodonticTreatmentRecord[]).map(
+              (record) => (
+                <TableRow key={record.record_id}>
+                  <TableCell>
+                    {formatValue(record.appointment_number)}
+                  </TableCell>
+                  <TableCell>{formatValue(record.date)}</TableCell>
+                  <TableCell>{formatValue(record.arch_wire)}</TableCell>
+                  <TableCell>{formatValue(record.procedure)}</TableCell>
+                  <TableCell>{formatValue(record.amount_paid)}</TableCell>
+                  <TableCell>{formatValue(record.next_schedule)}</TableCell>
+                </TableRow>
+              )
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-full sm:max-w-[80rem] p-6 rounded-lg bg-white shadow-lg">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold text-gray-800">
+            Patient Details - {patient.info.name} ({type})
+          </DialogTitle>
+        </DialogHeader>
+        <Tabs defaultValue="info" className="w-full">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 bg-gray-100 p-1 rounded-lg">
+            <TabsTrigger
+              value="info"
+              className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
+              Patient Info
+            </TabsTrigger>
+            {type === "Regular" && (
+              <TabsTrigger
+                value="history"
+                className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              >
+                Medical History
+              </TabsTrigger>
+            )}
+            <TabsTrigger
+              value="records"
+              className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
+              Treatment Records
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="info">
+            <ScrollArea className="max-h-[60vh] pr-4">
+              {renderPatientInfo()}
+            </ScrollArea>
+          </TabsContent>
+          {type === "Regular" && (
+            <TabsContent value="history">
+              <ScrollArea className="max-h-[60vh] pr-4">
+                {renderMedicalHistory()}
+              </ScrollArea>
+            </TabsContent>
+          )}
+          <TabsContent value="records">
+            <ScrollArea className="max-h-[60vh] pr-4">
+              {renderTreatmentRecords()}
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+        <DialogFooter className="mt-6 flex justify-end gap-4">
+          <Button
+            variant="outline"
+            className="border-gray-300 text-gray-700 hover:bg-gray-100"
+            onClick={() =>
+              console.log("Edit patient:", patient.info.patient_id)
+            }
+          >
+            Edit (Coming Soon)
+          </Button>
+          <Button
+            className="bg-blue-600 text-white hover:bg-blue-700"
+            onClick={onClose}
+          >
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default PatientDetailsModal;

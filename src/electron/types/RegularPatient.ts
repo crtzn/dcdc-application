@@ -1,14 +1,15 @@
 export interface RegularPatient {
   patient_id: number;
   name: string;
-  birthday: string;
-  religion: string;
-  home_address: string;
-  sex: string;
-  age: number;
-  nationality: string;
-  cellphone_number: string;
-  registration_date: string;
+  birthday?: string;
+  religion?: string;
+  home_address?: string;
+  sex?: string;
+  age?: number;
+  nationality?: string;
+  cellphone_number?: string;
+  registration_date?: string;
+  created_at?: string;
 }
 
 // types/RegularMedicalHistory.ts
@@ -37,6 +38,7 @@ export interface RegularMedicalHistory {
 
 // types/RegularTreatmentRecord.ts
 export interface RegularTreatmentRecord {
+  record_id?: number; // Auto-incremented
   patient_id?: number; // Foreign key to regular_patients
   treatment_date: string;
   tooth_number?: string;

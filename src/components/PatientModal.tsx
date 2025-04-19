@@ -18,7 +18,7 @@ function PatientModal() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-2">
+        <Button className="bg-[#2776ab] hover:bg-blue-700 text-white rounded-md px-4 py-2">
           New Patient
         </Button>
       </DialogTrigger>

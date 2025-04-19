@@ -38,6 +38,24 @@ electron.contextBridge.exposeInMainWorld("api", {
   getAllOrthodonticPatients: () =>
     ipcRenderer.invoke("get-all-orthodontic-patients"),
   getAllPatients: () => ipcRenderer.invoke("get-all-patients"),
+  getRecentPatients: () => ipcRenderer.invoke("get-recent-patients"),
+  getFilteredPatients: (
+    searchName: string,
+    typeFilter: string,
+    genderFilter: string,
+    sortBy: string,
+    sortDirection: string
+  ) =>
+    ipcRenderer.invoke(
+      "get-filtered-patients",
+      searchName,
+      typeFilter,
+      genderFilter,
+      sortBy,
+      sortDirection
+    ),
+  getPatientDetails: (patientId: number, type: "Regular" | "Ortho") =>
+    ipcRenderer.invoke("get-patient-details", patientId, type),
   onPatientAdded: (callback: () => void) => {
     ipcRenderer.on("patient-added", callback);
     // Return cleanup function

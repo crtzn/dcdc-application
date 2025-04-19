@@ -45,7 +45,8 @@ function initializeDatabase() {
         age INTEGER,
         nationality TEXT,
         cellphone_number TEXT,
-        registration_date TEXT
+        registration_date TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -118,7 +119,8 @@ function initializeDatabase() {
         congenital_abnormalities BOOLEAN DEFAULT 0,
         temporomandibular_joint_problems BOOLEAN DEFAULT 0,
         oral_hygiene TEXT,
-        gingival_tissues TEXT
+        gingival_tissues TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -452,6 +454,245 @@ export function getAllPatients(): {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Error fetching overall patients count:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+//=========
+
+export function getRecentPatients(limit = 5): {
+  success: boolean;
+  patients?: Array<{
+    name: string;
+    type: "Regular" | "Ortho";
+    sex: string;
+    age: number;
+    created_at: string;
+  }>;
+  error?: string;
+} {
+  try {
+    const query = `
+      SELECT name, 'Regular' as type, sex, age, created_at
+      FROM regular_patients
+      UNION ALL
+      SELECT name, 'Ortho' as type, sex, age, created_at
+      FROM orthodontic_patients
+      ORDER BY created_at DESC
+      LIMIT ?
+    `;
+    const stmt = db.prepare(query);
+    const results = stmt.all(limit) as Array<{
+      name: string;
+      type: "Regular" | "Ortho";
+      sex: string;
+      age: number;
+      created_at: string;
+    }>;
+
+    console.log(`Fetched ${results.length} recent patients`);
+
+    return {
+      success: true,
+      patients: results,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error fetching recent patients:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+export function getFilteredPatients(
+  searchName = "",
+  typeFilter = "All",
+  genderFilter = "All",
+  sortBy = "created_at",
+  sortDirection = "DESC"
+): {
+  success: boolean;
+  patients?: Array<{
+    patient_id: number;
+    name: string;
+    type: "Regular" | "Ortho";
+    sex: string;
+    age: number;
+    created_at: string;
+  }>;
+  error?: string;
+} {
+  try {
+    let query = `
+      SELECT patient_id, name, 'Regular' as type, sex, age, created_at
+      FROM regular_patients
+      UNION ALL
+      SELECT patient_id, name, 'Ortho' as type, sex, age, created_at
+      FROM orthodontic_patients
+      WHERE 1=1
+    `;
+    const params: (string | number)[] = [];
+
+    // Name filter
+    if (searchName) {
+      query += ` AND name LIKE ?`;
+      params.push(`%${searchName}%`);
+    }
+
+    // Type filter
+    if (typeFilter !== "All") {
+      query += ` AND type = ?`;
+      params.push(typeFilter);
+    }
+
+    // Gender filter
+    if (genderFilter !== "All") {
+      query += ` AND sex = ?`;
+      params.push(genderFilter);
+    }
+
+    // Sorting
+    const validSortColumns = ["name", "type", "sex", "age", "created_at"];
+    const sortColumn = validSortColumns.includes(sortBy)
+      ? sortBy
+      : "created_at";
+    const direction = sortDirection === "ASC" ? "ASC" : "DESC";
+    query += ` ORDER BY ${sortColumn} ${direction}`;
+
+    const stmt = db.prepare(query);
+    const results = stmt.all(...params) as Array<{
+      patient_id: number;
+      name: string;
+      type: "Regular" | "Ortho";
+      sex: string;
+      age: number;
+      created_at: string;
+    }>;
+
+    console.log(`Fetched ${results.length} patients with filters`);
+
+    return {
+      success: true,
+      patients: results,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error fetching filtered patients:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+export function getPatientDetails(
+  patientId: number,
+  type: "Regular" | "Ortho"
+): {
+  success: boolean;
+  patient?: {
+    info: RegularPatient | OrthodonticPatient;
+    medicalHistory?: RegularMedicalHistory[];
+    treatmentRecords?: RegularTreatmentRecord[] | OrthodonticTreatmentRecord[];
+  };
+  error?: string;
+} {
+  try {
+    let patientInfo: RegularPatient | OrthodonticPatient;
+    let medicalHistory: RegularMedicalHistory[] | undefined;
+    let treatmentRecords:
+      | RegularTreatmentRecord[]
+      | OrthodonticTreatmentRecord[]
+      | undefined;
+
+    if (type === "Regular") {
+      // Fetch patient info
+      const infoStmt = db.prepare(`
+        SELECT patient_id, name, birthday, religion, home_address, sex, age,
+               nationality, cellphone_number, registration_date, created_at
+        FROM regular_patients
+        WHERE patient_id = ?
+      `);
+      const result = infoStmt.get(patientId) as RegularPatient | undefined;
+
+      if (!result) {
+        throw new Error("Regular patient not found");
+      }
+      patientInfo = result;
+
+      // Fetch medical history
+      const historyStmt = db.prepare(`
+        SELECT history_id, patient_id, general_health, under_medical_treatment,
+               medical_condition, serious_illness_or_surgery, illness_or_surgery_details,
+               hospitalized, hospitalization_details, taking_medications, medications_list,
+               uses_tobacco, list_of_allergies, bleeding_time, is_pregnant, is_nursing,
+               taking_birth_control, blood_type, blood_pressure, selected_conditions
+        FROM regular_medical_history
+        WHERE patient_id = ?
+      `);
+      medicalHistory = historyStmt.all(patientId) as RegularMedicalHistory[];
+
+      // Fetch treatment records
+      const recordsStmt = db.prepare(`
+        SELECT record_id, patient_id, treatment_date, tooth_number, procedure,
+               dentist_name, amount_charged, amount_paid, balance, mode_of_payment, notes
+        FROM regular_treatment_records
+        WHERE patient_id = ?
+        ORDER BY treatment_date DESC
+      `);
+      treatmentRecords = recordsStmt.all(patientId) as RegularTreatmentRecord[];
+    } else if (type === "Ortho") {
+      // Fetch patient info
+      const infoStmt = db.prepare(`
+        SELECT patient_id, date_of_exam, name, occupation, birthday, parent_guardian_name,
+               address, telephone_home, telephone_business, cellphone_number, email,
+               chart, sex, age, chief_complaint, past_medical_dental_history,
+               prior_orthodontic_history, under_treatment_or_medication,
+               congenital_abnormalities, temporomandibular_joint_problems,
+               oral_hygiene, gingival_tissues, created_at
+        FROM orthodontic_patients
+        WHERE patient_id = ?
+      `);
+      const result = infoStmt.get(patientId) as OrthodonticPatient | undefined;
+
+      if (!result) {
+        throw new Error("Orthodontic patient not found");
+      }
+      patientInfo = result;
+
+      // Fetch treatment records
+      const recordsStmt = db.prepare(`
+        SELECT record_id, patient_id, appt_no, date, arch_wire, procedure,
+               amount_paid, next_schedule
+        FROM orthodontic_treatment_records
+        WHERE patient_id = ?
+        ORDER BY date DESC
+      `);
+      treatmentRecords = recordsStmt.all(
+        patientId
+      ) as OrthodonticTreatmentRecord[];
+    } else {
+      throw new Error("Invalid patient type");
+    }
+
+    console.log(`Fetched details for patient ID ${patientId} (${type})`);
+
+    return {
+      success: true,
+      patient: {
+        info: patientInfo,
+        medicalHistory,
+        treatmentRecords,
+      },
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error fetching patient details:", errorMessage);
     return {
       success: false,
       error: errorMessage,

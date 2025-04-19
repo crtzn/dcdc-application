@@ -43,6 +43,49 @@ interface ElectronAPI {
     total_count?: number;
     error?: string;
   }>;
+  getRecentPatients: () => Promise<{
+    success: boolean;
+    patients?: Array<{
+      name: string;
+      type: "Regular" | "Ortho";
+      sex: string;
+      age: number;
+      created_at: string;
+    }>;
+    error?: string;
+  }>;
+  getFilteredPatients: (
+    searchName: string,
+    typeFilter: string,
+    genderFilter: string,
+    sortBy: string,
+    sortDirection: string
+  ) => Promise<{
+    success: boolean;
+    patients?: Array<{
+      patient_id: number;
+      name: string;
+      type: "Regular" | "Ortho";
+      sex: string;
+      age: number;
+      created_at: string;
+    }>;
+    error?: string;
+  }>;
+  getPatientDetails: (
+    patientId: number,
+    type: "Regular" | "Ortho"
+  ) => Promise<{
+    success: boolean;
+    patient?: {
+      info: RegularPatient | OrthodonticPatient;
+      medicalHistory?: RegularMedicalHistory[];
+      treatmentRecords?:
+        | RegularTreatmentRecord[]
+        | OrthodonticTreatmentRecord[];
+    };
+    error?: string;
+  }>;
   onPatientAdded: (callback: () => void) => () => void;
 }
 
