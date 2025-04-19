@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, LayoutDashboard, UsersRound } from "lucide-react";
+import { LayoutDashboard, UsersRound } from "lucide-react";
 import { useWindowWidth } from "@react-hook/window-size";
 import { Nav } from "./Nav";
 
@@ -33,12 +33,6 @@ const Sidebar: React.FC = () => {
             icon: UsersRound,
             label: "Patient Profile",
             href: "/patient-profile",
-          },
-          {
-            title: "Activity",
-            icon: Activity,
-            label: "Activity",
-            href: "/activity",
           },
         ]}
       />
