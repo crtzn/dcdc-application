@@ -41,7 +41,7 @@ interface PatientDetailsModalProps {
   type: "Regular" | "Ortho" | null;
   isOpen: boolean;
   onClose: () => void;
-  onRefresh: () => void; // New prop to refresh patient details
+  onRefresh: () => void;
 }
 
 const PatientDetailsModal = ({
@@ -59,7 +59,16 @@ const PatientDetailsModal = ({
     value: string | number | boolean | Date | null | undefined
   ): string => {
     if (value === null || value === undefined) return "N/A";
+
+    // Handle numeric booleans (0/1)
+    if (typeof value === "number" && (value === 0 || value === 1)) {
+      return value === 1 ? "Yes" : "No";
+    }
+
+    // Handle regular booleans
     if (typeof value === "boolean") return value ? "Yes" : "No";
+
+    // Handle dates
     if (
       value instanceof Date ||
       (typeof value === "string" && value.match(/^\d{4}-\d{2}-\d{2}/))
@@ -70,6 +79,7 @@ const PatientDetailsModal = ({
         return String(value);
       }
     }
+
     return String(value);
   };
 
@@ -93,7 +103,7 @@ const PatientDetailsModal = ({
       if (result.success) {
         toast.success("Treatment record added successfully");
         setShowTreatmentForm(false);
-        onRefresh(); // Refresh patient details to show new record
+        onRefresh();
       } else {
         throw new Error("Failed to add treatment record");
       }
@@ -188,38 +198,126 @@ const PatientDetailsModal = ({
     }
 
     return (
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>General Health</TableHead>
-              <TableHead>Medical Condition</TableHead>
-              <TableHead>Illness/Surgery Details</TableHead>
-              <TableHead>Hospitalization Details</TableHead>
-              <TableHead>Medications List</TableHead>
-              <TableHead>Allergies</TableHead>
-              <TableHead>Blood Type</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {patient.medicalHistory.map((history) => (
-              <TableRow key={history.history_id}>
-                <TableCell>{formatValue(history.general_health)}</TableCell>
-                <TableCell>{formatValue(history.medical_condition)}</TableCell>
-                <TableCell>
+      <ScrollArea className="max-h-[60vh] w-full pr-4">
+        <div className="space-y-4">
+          {patient.medicalHistory.map((history) => (
+            <div
+              key={history.history_id}
+              className="border rounded-lg p-4 bg-gray-50 shadow-sm"
+            >
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                Medical History #{history.history_id}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    General Health:
+                  </span>{" "}
+                  {formatValue(history.general_health)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Under Treatment:
+                  </span>{" "}
+                  {formatValue(history.under_medical_treatment)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Medical Condition:
+                  </span>{" "}
+                  {formatValue(history.medical_condition)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Serious Illness/Surgery:
+                  </span>{" "}
+                  {formatValue(history.serious_illness_or_surgery)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Illness/Surgery Details:
+                  </span>{" "}
                   {formatValue(history.illness_or_surgery_details)}
-                </TableCell>
-                <TableCell>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Hospitalized:
+                  </span>{" "}
+                  {formatValue(history.hospitalized)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Hospitalization Details:
+                  </span>{" "}
                   {formatValue(history.hospitalization_details)}
-                </TableCell>
-                <TableCell>{formatValue(history.medications_list)}</TableCell>
-                <TableCell>{formatValue(history.list_of_allergies)}</TableCell>
-                <TableCell>{formatValue(history.blood_type)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Taking Medications:
+                  </span>{" "}
+                  {formatValue(history.taking_medications)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Medications List:
+                  </span>{" "}
+                  {formatValue(history.medications_list)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Uses Tobacco:
+                  </span>{" "}
+                  {formatValue(history.uses_tobacco)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Allergies:
+                  </span>{" "}
+                  {formatValue(history.list_of_allergies)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Bleeding Time:
+                  </span>{" "}
+                  {formatValue(history.bleeding_time)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">Pregnant:</span>{" "}
+                  {formatValue(history.is_pregnant)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">Nursing:</span>{" "}
+                  {formatValue(history.is_nursing)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Birth Control:
+                  </span>{" "}
+                  {formatValue(history.taking_birth_control)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Blood Type:
+                  </span>{" "}
+                  {formatValue(history.blood_type)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Blood Pressure:
+                  </span>{" "}
+                  {formatValue(history.blood_pressure)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-700">
+                    Selected Conditions:
+                  </span>{" "}
+                  {formatValue(history.selected_conditions)}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
     );
   };
 
@@ -281,6 +379,7 @@ const PatientDetailsModal = ({
               <TableHead>Arch Wire</TableHead>
               <TableHead>Procedure</TableHead>
               <TableHead>Amount Paid</TableHead>
+              <TableHead>Mode of Payment</TableHead>
               <TableHead>Next Schedule</TableHead>
             </TableRow>
           </TableHeader>
@@ -288,13 +387,12 @@ const PatientDetailsModal = ({
             {(patient.treatmentRecords as OrthodonticTreatmentRecord[]).map(
               (record) => (
                 <TableRow key={record.record_id}>
-                  <TableCell>
-                    {formatValue(record.appointment_number)}
-                  </TableCell>
+                  <TableCell>{formatValue(record.appt_no)}</TableCell>
                   <TableCell>{formatValue(record.date)}</TableCell>
                   <TableCell>{formatValue(record.arch_wire)}</TableCell>
                   <TableCell>{formatValue(record.procedure)}</TableCell>
                   <TableCell>{formatValue(record.amount_paid)}</TableCell>
+                  <TableCell>{formatValue(record.mode_of_payment)}</TableCell>
                   <TableCell>{formatValue(record.next_schedule)}</TableCell>
                 </TableRow>
               )

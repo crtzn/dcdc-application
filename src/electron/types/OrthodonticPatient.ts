@@ -27,10 +27,11 @@ export interface OrthodonticPatient {
 export interface OrthodonticTreatmentRecord {
   record_id?: number;
   patient_id: number;
-  appointment_number: string;
+  appt_no: string;
   date: string;
   arch_wire?: string;
   procedure?: string;
   amount_paid?: number;
   next_schedule?: string;
+  mode_of_payment?: string;
 }

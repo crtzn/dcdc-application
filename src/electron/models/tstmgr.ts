@@ -135,6 +135,7 @@ function initializeDatabase() {
         procedure TEXT,
         amount_paid REAL,
         next_schedule TEXT,
+        mode_of_payment TEXT,
         FOREIGN KEY (patient_id) REFERENCES orthodontic_patients(patient_id)
       )
     `);
@@ -363,29 +364,31 @@ export function addOrthodonticTreatmentRecord(
   record: OrthodonticTreatmentRecord
 ): {
   success: boolean;
+  error?: string; // Added for better error reporting
 } {
   try {
     const stmt = db.prepare(`
       INSERT INTO orthodontic_treatment_records (
-        patient_id, appt_no, date, arch_wire, procedure, amount_paid, next_schedule
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        patient_id, appt_no, date, arch_wire, procedure, amount_paid, mode_of_payment, next_schedule
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
       record.patient_id,
-      record.appointment_number || null,
+      record.appt_no || null,
       record.date || null,
       record.arch_wire || null,
       record.procedure || null,
       record.amount_paid || null,
+      record.mode_of_payment || null,
       record.next_schedule || null
     );
     return { success: true };
   } catch (error) {
-    console.error("Error adding orthodontic treatment record:", error);
-    return { success: false };
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error adding orthodontic treatment record:", errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
-
 // Check if orthodontic patient name exists
 export function checkOrthoPatientNameExists(name: string): boolean {
   try {
@@ -668,7 +671,7 @@ export function getPatientDetails(
       // Fetch treatment records
       const recordsStmt = db.prepare(`
         SELECT record_id, patient_id, appt_no, date, arch_wire, procedure,
-               amount_paid, next_schedule
+               amount_paid, mode_of_payment, next_schedule
         FROM orthodontic_treatment_records
         WHERE patient_id = ?
         ORDER BY date DESC

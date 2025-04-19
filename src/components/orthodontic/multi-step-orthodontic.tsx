@@ -1,5 +1,6 @@
+// src/components/orthodontic/orthodontic-multi-step-form.tsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Added for navigation
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import OrthodonticPatientForm from "@/components/orthodontic/orthodontic-patient-form";
 import OrthodonticTreatmentRecordForm from "@/components/orthodontic/orthodontic-treatment-record";
@@ -25,7 +26,7 @@ const OrthodonticMultiStepForm: React.FC = () => {
     >
   >({});
   const [, setPatientId] = useState<number | null>(null);
-  const navigate = useNavigate(); // Added for navigation
+  const navigate = useNavigate();
 
   const steps = [
     { label: "Patient Information", step: 1 },
@@ -54,6 +55,7 @@ const OrthodonticMultiStepForm: React.FC = () => {
     >
   ) => {
     try {
+      console.log("Treatment data received:", treatmentData); // Add logging
       // Add orthodontic patient
       const patientResult = await window.api.addOrthodonticPatient(
         patientData as Omit<
@@ -68,12 +70,13 @@ const OrthodonticMultiStepForm: React.FC = () => {
       setPatientId(newPatientId);
 
       // Add treatment record
-      const treatmentWithId = { ...treatmentData, patient_id: newPatientId };
+      const treatmentWithId = {
+        ...treatmentData,
+        patient_id: newPatientId,
+      } as Omit<OrthodonticTreatmentRecord, "record_id" | "created_at">;
+      console.log("Treatment data sent to backend:", treatmentWithId); // Add logging
       const treatmentResult = await window.api.addOrthodonticTreatmentRecord(
-        treatmentWithId as Omit<
-          OrthodonticTreatmentRecord,
-          "record_id" | "created_at"
-        >
+        treatmentWithId
       );
       if (!treatmentResult.success) {
         throw new Error("Failed to add orthodontic treatment record");
@@ -81,16 +84,20 @@ const OrthodonticMultiStepForm: React.FC = () => {
 
       // Notify user and navigate
       toast.success(
-        "Orthodontic patient added successfully! Redirecting to dashboard..."
+        "Orthodontic patient and treatment record added successfully! Redirecting to dashboard..."
       );
       setStep(1);
       setPatientData({});
       setTreatmentRecordData({});
       setPatientId(null);
-      navigate("/"); // Navigate to dashboard to see updated counts
+      navigate("/");
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
+      console.error("Error in handleSubmit:", errorMessage, {
+        patientData,
+        treatmentData,
+      });
       toast.error(`Error submitting data: ${errorMessage}`);
     }
   };

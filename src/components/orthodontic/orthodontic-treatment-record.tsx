@@ -1,3 +1,4 @@
+// src/components/orthodontic/orthodontic-treatment-record.tsx
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -17,12 +25,13 @@ import { Separator } from "@/components/ui/separator";
 import { OrthodonticTreatmentRecord } from "@/electron/types/OrthodonticPatient";
 
 const treatmentSchema = z.object({
-  appointment_number: z.string().min(1, "Appointment number is required"),
+  appt_no: z.string().min(1, "Appointment number is required"),
   date: z.string().min(1, "Date is required"),
   arch_wire: z.string().optional(),
   procedure: z.string().optional(),
   amount_paid: z.number().min(0, "Amount paid must be positive").optional(),
   next_schedule: z.string().optional(),
+  mode_of_payment: z.string().optional(),
 });
 
 type TreatmentFormValues = Omit<
@@ -41,19 +50,25 @@ const OrthodonticTreatmentRecordForm: React.FC<
   const form = useForm<TreatmentFormValues>({
     resolver: zodResolver(treatmentSchema),
     defaultValues: {
-      appointment_number: "",
+      appt_no: "",
       date: new Date().toISOString().split("T")[0],
       arch_wire: "",
       procedure: "",
       amount_paid: undefined,
       next_schedule: "",
+      mode_of_payment: "",
     },
   });
+
+  const handleSubmit = (data: TreatmentFormValues) => {
+    console.log("Form submitted with data:", data); // Add logging
+    onSubmit(data);
+  };
 
   return (
     <Card className="w-full max-w-3xl mx-auto shadow-lg">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(handleSubmit)}>
           <CardContent className="space-y-8">
             {/* Treatment Details */}
             <div>
@@ -63,7 +78,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="appointment_number"
+                  name="appt_no"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-gray-700 font-medium">
@@ -188,6 +203,32 @@ const OrthodonticTreatmentRecordForm: React.FC<
                           {...field}
                         />
                       </FormControl>
+                      <FormMessage className="text-red-500" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="mode_of_payment"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">
+                        Mode of Payment
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                            <SelectValue placeholder="Select payment mode" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="GCash">Gcash</SelectItem>
+                          <SelectItem value="Cash">Cash</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage className="text-red-500" />
                     </FormItem>
                   )}
