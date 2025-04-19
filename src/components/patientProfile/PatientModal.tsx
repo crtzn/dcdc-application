@@ -31,6 +31,7 @@ import {
   OrthodonticTreatmentRecord,
 } from "@/electron/types/OrthodonticPatient";
 import { useState } from "react";
+import jsPDF from "jspdf";
 
 interface PatientDetailsModalProps {
   patient: {
@@ -59,16 +60,10 @@ const PatientDetailsModal = ({
     value: string | number | boolean | Date | null | undefined
   ): string => {
     if (value === null || value === undefined) return "N/A";
-
-    // Handle numeric booleans (0/1)
     if (typeof value === "number" && (value === 0 || value === 1)) {
       return value === 1 ? "Yes" : "No";
     }
-
-    // Handle regular booleans
     if (typeof value === "boolean") return value ? "Yes" : "No";
-
-    // Handle dates
     if (
       value instanceof Date ||
       (typeof value === "string" && value.match(/^\d{4}-\d{2}-\d{2}/))
@@ -79,7 +74,6 @@ const PatientDetailsModal = ({
         return String(value);
       }
     }
-
     return String(value);
   };
 
@@ -99,7 +93,6 @@ const PatientDetailsModal = ({
         };
         result = await window.api.addOrthodonticTreatmentRecord(treatmentData);
       }
-
       if (result.success) {
         toast.success("Treatment record added successfully");
         setShowTreatmentForm(false);
@@ -112,6 +105,320 @@ const PatientDetailsModal = ({
         error instanceof Error ? error.message : String(error);
       toast.error(`Error adding treatment record: ${errorMessage}`);
     }
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    let yOffset = 20;
+    const pageWidth = 210; // A4 page width in mm
+    const margin = 20;
+    const usableWidth = pageWidth - 2 * margin; // 170mm
+
+    const checkPage = () => {
+      if (yOffset > 250) {
+        doc.addPage();
+        yOffset = 20;
+      }
+    };
+
+    // Title
+    doc.setFontSize(18);
+    doc.text(
+      `Patient Details - ${patient.info.name} (${type})`,
+      margin,
+      yOffset
+    );
+    yOffset += 15;
+
+    // Patient Info Section
+    doc.setFontSize(14);
+    doc.text("Patient Information", margin, yOffset);
+    yOffset += 10;
+
+    const patientFields =
+      type === "Regular"
+        ? [
+            { key: "name", label: "Name" },
+            { key: "birthday", label: "Birthday" },
+            { key: "religion", label: "Religion" },
+            { key: "home_address", label: "Home Address" },
+            { key: "sex", label: "Gender" },
+            { key: "age", label: "Age" },
+            { key: "nationality", label: "Nationality" },
+            { key: "cellphone_number", label: "Cellphone Number" },
+            { key: "registration_date", label: "Registration Date" },
+            { key: "created_at", label: "Created At" },
+          ]
+        : [
+            { key: "date_of_exam", label: "Date of Exam" },
+            { key: "name", label: "Name" },
+            { key: "occupation", label: "Occupation" },
+            { key: "birthday", label: "Birthday" },
+            { key: "parent_guardian_name", label: "Parent/Guardian Name" },
+            { key: "address", label: "Address" },
+            { key: "telephone_home", label: "Telephone (Home)" },
+            { key: "telephone_business", label: "Telephone (Business)" },
+            { key: "cellphone_number", label: "Cellphone Number" },
+            { key: "email", label: "Email" },
+            { key: "chart", label: "Chart" },
+            { key: "sex", label: "Gender" },
+            { key: "age", label: "Age" },
+            { key: "chief_complaint", label: "Chief Complaint" },
+            {
+              key: "past_medical_dental_history",
+              label: "Past Medical/Dental History",
+            },
+            {
+              key: "prior_orthodontic_history",
+              label: "Prior Orthodontic History",
+            },
+            {
+              key: "under_treatment_or_medication",
+              label: "Under Treatment/Medication",
+            },
+            {
+              key: "congenital_abnormalities",
+              label: "Congenital Abnormalities",
+            },
+            {
+              key: "temporomandibular_joint_problems",
+              label: "TMJ Problems",
+            },
+            { key: "oral_hygiene", label: "Oral Hygiene" },
+            { key: "gingival_tissues", label: "Gingival Tissues" },
+            { key: "created_at", label: "Created At" },
+          ];
+
+    doc.setFontSize(10);
+    patientFields.forEach(({ key, label }) => {
+      checkPage();
+      const value = formatValue(
+        (patient.info as RegularPatient | OrthodonticPatient)[
+          key as keyof (RegularPatient | OrthodonticPatient)
+        ]
+      );
+      doc.text(`${label}: ${value}`, margin, yOffset);
+      yOffset += 8;
+    });
+    yOffset += 10;
+
+    // Medical History Section (Regular Patients Only)
+    if (
+      type === "Regular" &&
+      patient.medicalHistory &&
+      patient.medicalHistory.length > 0
+    ) {
+      checkPage();
+      doc.setFontSize(14);
+      doc.text("Medical History", margin, yOffset);
+      yOffset += 10;
+
+      patient.medicalHistory.forEach((history) => {
+        checkPage();
+        doc.setFontSize(12);
+        doc.text(`Medical History #${history.history_id}`, margin, yOffset);
+        yOffset += 8;
+
+        const historyFields = [
+          { label: "General Health", value: history.general_health },
+          { label: "Under Treatment", value: history.under_medical_treatment },
+          { label: "Medical Condition", value: history.medical_condition },
+          {
+            label: "Serious Illness/Surgery",
+            value: history.serious_illness_or_surgery,
+          },
+          {
+            label: "Illness/Surgery Details",
+            value: history.illness_or_surgery_details,
+          },
+          { label: "Hospitalized", value: history.hospitalized },
+          {
+            label: "Hospitalization Details",
+            value: history.hospitalization_details,
+          },
+          { label: "Taking Medications", value: history.taking_medications },
+          { label: "Medications List", value: history.medications_list },
+          { label: "Uses Tobacco", value: history.uses_tobacco },
+          { label: "Allergies", value: history.list_of_allergies },
+          { label: "Bleeding Time", value: history.bleeding_time },
+          { label: "Pregnant", value: history.is_pregnant },
+          { label: "Nursing", value: history.is_nursing },
+          { label: "Birth Control", value: history.taking_birth_control },
+          { label: "Blood Type", value: history.blood_type },
+          { label: "Blood Pressure", value: history.blood_pressure },
+          { label: "Selected Conditions", value: history.selected_conditions },
+        ];
+
+        doc.setFontSize(10);
+        historyFields.forEach(({ label, value }) => {
+          checkPage();
+          doc.text(`${label}: ${formatValue(value)}`, margin + 5, yOffset);
+          yOffset += 8;
+        });
+        yOffset += 5;
+      });
+    } else if (type === "Regular") {
+      checkPage();
+      doc.setFontSize(14);
+      doc.text("Medical History", margin, yOffset);
+      yOffset += 10;
+      doc.setFontSize(10);
+      doc.text("No medical history available.", margin, yOffset);
+      yOffset += 10;
+    }
+
+    // Treatment Records Section (Improved Layout)
+    if (patient.treatmentRecords && patient.treatmentRecords.length > 0) {
+      checkPage();
+      doc.setFontSize(14);
+      doc.text("Treatment Records", margin, yOffset);
+      yOffset += 10;
+
+      if (type === "Regular") {
+        const headers = [
+          "Treatment Date",
+          "Tooth Number",
+          "Procedure",
+          "Dentist Name",
+          "Amount Charged",
+          "Amount Paid",
+          "Balance",
+          "Mode of Payment",
+          "Notes",
+        ];
+        const columnWidths = [25, 20, 20, 25, 20, 20, 15, 25, 30]; // Adjusted widths to fit within 170mm
+        const data = (patient.treatmentRecords as RegularTreatmentRecord[]).map(
+          (record) => [
+            formatValue(record.treatment_date),
+            formatValue(record.tooth_number),
+            formatValue(record.procedure),
+            formatValue(record.dentist_name),
+            formatValue(record.amount_charged),
+            formatValue(record.amount_paid),
+            formatValue(record.balance),
+            formatValue(record.mode_of_payment),
+            formatValue(record.notes),
+          ]
+        );
+
+        // Draw Headers
+        doc.setFontSize(10);
+        let xOffset = margin;
+        headers.forEach((header, index) => {
+          const wrappedHeader = doc.splitTextToSize(
+            header,
+            columnWidths[index]
+          );
+          doc.text(wrappedHeader, xOffset, yOffset);
+          xOffset += columnWidths[index];
+        });
+        yOffset += 8;
+        doc.line(margin, yOffset, margin + usableWidth, yOffset); // Header line
+        yOffset += 5;
+
+        // Draw Data Rows
+        data.forEach((row) => {
+          checkPage();
+          xOffset = margin;
+          let maxHeight = 0;
+          const rowHeights: number[] = [];
+
+          // Calculate the height of each cell (for wrapped text)
+          row.forEach((cell, index) => {
+            const wrappedText = doc.splitTextToSize(cell, columnWidths[index]);
+            const cellHeight = wrappedText.length * 5; // Approximate height per line
+            rowHeights.push(cellHeight);
+            maxHeight = Math.max(maxHeight, cellHeight);
+          });
+
+          // Draw each cell in the row
+          row.forEach((cell, index) => {
+            const wrappedText = doc.splitTextToSize(cell, columnWidths[index]);
+            doc.text(wrappedText, xOffset, yOffset);
+            xOffset += columnWidths[index];
+          });
+
+          yOffset += maxHeight + 2; // Add some padding between rows
+        });
+      } else {
+        const headers = [
+          "Appointment No.",
+          "Date",
+          "Arch Wire",
+          "Procedure",
+          "Amount Paid",
+          "Mode of Payment",
+          "Next Schedule",
+        ];
+        const columnWidths = [25, 25, 20, 20, 20, 25, 25]; // Adjusted widths to fit within 170mm
+        const data = (
+          patient.treatmentRecords as OrthodonticTreatmentRecord[]
+        ).map((record) => [
+          formatValue(record.appt_no),
+          formatValue(record.date),
+          formatValue(record.arch_wire),
+          formatValue(record.procedure),
+          formatValue(record.amount_paid),
+          formatValue(record.mode_of_payment),
+          formatValue(record.next_schedule),
+        ]);
+
+        // Draw Headers
+        doc.setFontSize(10);
+        let xOffset = margin;
+        headers.forEach((header, index) => {
+          const wrappedHeader = doc.splitTextToSize(
+            header,
+            columnWidths[index]
+          );
+          doc.text(wrappedHeader, xOffset, yOffset);
+          xOffset += columnWidths[index];
+        });
+        yOffset += 8;
+        doc.line(margin, yOffset, margin + usableWidth, yOffset); // Header line
+        yOffset += 5;
+
+        // Draw Data Rows
+        data.forEach((row) => {
+          checkPage();
+          xOffset = margin;
+          let maxHeight = 0;
+          const rowHeights: number[] = [];
+
+          // Calculate the height of each cell (for wrapped text)
+          row.forEach((cell, index) => {
+            const wrappedText = doc.splitTextToSize(cell, columnWidths[index]);
+            const cellHeight = wrappedText.length * 5; // Approximate height per line
+            rowHeights.push(cellHeight);
+            maxHeight = Math.max(maxHeight, cellHeight);
+          });
+
+          // Draw each cell in the row
+          row.forEach((cell, index) => {
+            const wrappedText = doc.splitTextToSize(cell, columnWidths[index]);
+            doc.text(wrappedText, xOffset, yOffset);
+            xOffset += columnWidths[index];
+          });
+
+          yOffset += maxHeight + 2; // Add some padding between rows
+        });
+      }
+    } else {
+      checkPage();
+      doc.setFontSize(14);
+      doc.text("Treatment Records", margin, yOffset);
+      yOffset += 10;
+      doc.setFontSize(10);
+      doc.text("No treatment records available.", margin, yOffset);
+      yOffset += 10;
+    }
+
+    const fileName = `${patient.info.name.replace(
+      /\s+/g,
+      "_"
+    )}_Patient_Details_${format(new Date(), "yyyyMMdd")}.pdf`;
+    doc.save(fileName);
+    toast.success("PDF exported successfully!");
   };
 
   const renderPatientInfo = () => {
@@ -160,7 +467,10 @@ const PatientDetailsModal = ({
               key: "congenital_abnormalities",
               label: "Congenital Abnormalities",
             },
-            { key: "temporomandibular_joint_problems", label: "TMJ Problems" },
+            {
+              key: "temporomandibular_joint_problems",
+              label: "TMJ Problems",
+            },
             { key: "oral_hygiene", label: "Oral Hygiene" },
             { key: "gingival_tissues", label: "Gingival Tissues" },
             { key: "created_at", label: "Created At" },
@@ -253,7 +563,7 @@ const PatientDetailsModal = ({
                 </div>
                 <div>
                   <span className="font-semibold text-gray-700">
-                    Taking Medications:
+                    Take Medications:
                   </span>{" "}
                   {formatValue(history.taking_medications)}
                 </div>
@@ -494,6 +804,12 @@ const PatientDetailsModal = ({
             }
           >
             Edit (Coming Soon)
+          </Button>
+          <Button
+            className="bg-purple-600 text-white hover:bg-purple-700"
+            onClick={exportToPDF}
+          >
+            Export to PDF
           </Button>
           <Button
             className="bg-blue-600 text-white hover:bg-blue-700"
