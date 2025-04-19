@@ -1,43 +1,36 @@
 export interface OrthodonticPatient {
-  ortho_patient_id: number;
+  patient_id?: number;
+  date_of_exam: string;
   name: string;
-  birthdate?: string; // ISO date string
-  parents_guardians_name?: string;
-  parents_occupation?: string;
+  occupation?: string;
+  birthday?: string;
+  parent_guardian_name?: string;
   address?: string;
-  home_phone?: string;
-  business_phone?: string;
-  cellphone?: string;
+  telephone_home?: string;
+  telephone_business?: string;
+  cellphone_number?: string;
   email?: string;
-  chart_number?: string;
-  sex?: "Male" | "Female" | "Other";
-  age_years?: number;
-  age_months?: number;
-  age_days?: number;
-  created_at?: string; // ISO timestamp
-}
-
-export interface OrthodonticHistory {
-  ortho_history_id: number;
-  ortho_patient_id: number;
-  exam_date?: string; // ISO date string
-  chief_complaint?: string;
+  chart?: string;
+  sex: "Male" | "Female" | "Other";
+  age?: number;
+  chief_complaint: string;
   past_medical_dental_history?: string;
   prior_orthodontic_history?: string;
-  under_treatment_or_medication?: boolean;
-  congenital_abnormalities?: boolean;
-  tmj_problems?: boolean;
-  oral_hygiene?: "Excellent" | "Fair" | "Poor";
-  gingival_tissues?: "Thick" | "Thin" | "Normal" | "Receding";
+  under_treatment_or_medication: boolean;
+  congenital_abnormalities: "Yes" | "No";
+  tmj_problems: "Yes" | "No";
+  oral_hygiene: "Excellent" | "Fair" | "Poor";
+  gingival_tissues: "Thick" | "Thin" | "Normal" | "Receding";
+  created_at?: string;
 }
 
-export interface OrthodonticTreatmentPlan {
-  plan_id: number;
-  ortho_patient_id: number;
-  appointment_number?: string;
-  treatment_date: string; // ISO date string
+export interface OrthodonticTreatmentRecord {
+  record_id?: number;
+  patient_id: number;
+  appointment_number: string;
+  date: string;
   arch_wire?: string;
-  procedure_description: string;
-  amount_paid: number;
-  next_schedule?: string; // ISO date string
+  procedure?: string;
+  amount_paid?: number;
+  next_schedule?: string;
 }

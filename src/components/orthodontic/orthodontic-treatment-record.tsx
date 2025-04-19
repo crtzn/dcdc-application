@@ -1,4 +1,3 @@
-// src/components/TreatmentRecordForm.tsx
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,52 +14,41 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { OrthodonticTreatmentRecord } from "@/electron/types/OrthodonticPatient";
 
 const treatmentSchema = z.object({
-  treatment_date: z.string().min(1, "Treatment date is required"),
-  tooth_number: z.string().optional(),
+  appointment_number: z.string().min(1, "Appointment number is required"),
+  date: z.string().min(1, "Date is required"),
+  arch_wire: z.string().optional(),
   procedure: z.string().optional(),
-  dentist_name: z.string().optional(),
-  amount_charged: z
-    .number()
-    .min(0, "Amount charged must be positive")
-    .optional(),
   amount_paid: z.number().min(0, "Amount paid must be positive").optional(),
-  balance: z.number().min(0, "Balance must be positive").optional(),
-  mode_of_payment: z.string().optional(),
+  next_schedule: z.string().optional(),
   notes: z.string().optional(),
 });
 
-type TreatmentFormValues = z.infer<typeof treatmentSchema>;
+type TreatmentFormValues = Omit<
+  OrthodonticTreatmentRecord,
+  "record_id" | "patient_id" | "created_at"
+>;
 
-interface TreatmentRecordFormProps {
+interface OrthodonticTreatmentRecordFormProps {
   onSubmit: (data: TreatmentFormValues) => void;
   onBack: () => void;
 }
 
-const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
-  onSubmit,
-  onBack,
-}) => {
+const OrthodonticTreatmentRecordForm: React.FC<
+  OrthodonticTreatmentRecordFormProps
+> = ({ onSubmit, onBack }) => {
   const form = useForm<TreatmentFormValues>({
     resolver: zodResolver(treatmentSchema),
     defaultValues: {
-      treatment_date: new Date().toISOString().split("T")[0],
-      tooth_number: "",
+      appointment_number: "",
+      date: new Date().toISOString().split("T")[0],
+      arch_wire: "",
       procedure: "",
-      dentist_name: "",
-      amount_charged: 0,
-      amount_paid: 0,
-      balance: 0,
-      mode_of_payment: "",
+      amount_paid: undefined,
+      next_schedule: "",
       notes: "",
     },
   });
@@ -78,7 +66,26 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="treatment_date"
+                  name="appointment_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">
+                        Appointment Number
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter appointment number"
+                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="date"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-gray-700 font-medium">
@@ -97,15 +104,15 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
                 />
                 <FormField
                   control={form.control}
-                  name="tooth_number"
+                  name="arch_wire"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-gray-700 font-medium">
-                        Tooth Number
+                        Arch Wire
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Enter tooth number"
+                          placeholder="Enter arch wire details"
                           className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                           {...field}
                         />
@@ -133,25 +140,6 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="dentist_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        Dentist Name
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter dentist name"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500" />
-                    </FormItem>
-                  )}
-                />
               </div>
             </div>
 
@@ -163,29 +151,6 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
                 Payment Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="amount_charged"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        Amount Charged
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="Enter amount charged"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(parseFloat(e.target.value) || 0)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500" />
-                    </FormItem>
-                  )}
-                />
                 <FormField
                   control={form.control}
                   name="amount_paid"
@@ -201,7 +166,9 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
                           className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                           {...field}
                           onChange={(e) =>
-                            field.onChange(parseFloat(e.target.value) || 0)
+                            field.onChange(
+                              parseFloat(e.target.value) || undefined
+                            )
                           }
                         />
                       </FormControl>
@@ -211,49 +178,19 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
                 />
                 <FormField
                   control={form.control}
-                  name="balance"
+                  name="next_schedule"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-gray-700 font-medium">
-                        Balance
+                        Next Schedule
                       </FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          placeholder="Enter balance"
+                          type="date"
                           className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                           {...field}
-                          onChange={(e) =>
-                            field.onChange(parseFloat(e.target.value) || 0)
-                          }
                         />
                       </FormControl>
-                      <FormMessage className="text-red-500" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="mode_of_payment"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        Mode of Payment
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                            <SelectValue placeholder="Select payment mode" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="GCash">Gcash</SelectItem>
-                          <SelectItem value="Cash">Cash</SelectItem>
-                        </SelectContent>
-                      </Select>
                       <FormMessage className="text-red-500" />
                     </FormItem>
                   )}
@@ -311,4 +248,4 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
   );
 };
 
-export default TreatmentRecordForm;
+export default OrthodonticTreatmentRecordForm;

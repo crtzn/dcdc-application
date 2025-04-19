@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,6 +54,10 @@ interface RegularPatientFormProps {
 
 const RegularPatientForm: React.FC<RegularPatientFormProps> = ({ onNext }) => {
   const [showOtherInput, setShowOtherInput] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [isCheckingName, setIsCheckingName] = useState(false);
+  const [nameExists, setNameExists] = useState(false);
+
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
@@ -69,12 +73,46 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({ onNext }) => {
     },
   });
 
+  // Debounced name checking
+  useEffect(() => {
+    const name = form.watch("name");
+    if (name && name.length > 3) {
+      // Only check after 3 characters
+      const timer = setTimeout(async () => {
+        setIsCheckingName(true);
+        try {
+          const exists = await window.api.checkPatientName(name);
+          setNameExists(exists);
+          setNameError(
+            exists ? "A patient with this name already exists!" : null
+          );
+        } catch (error) {
+          console.error("Error checking patient name:", error);
+        } finally {
+          setIsCheckingName(false);
+        }
+      }, 500); // 0.5 second delay
+
+      return () => clearTimeout(timer);
+    } else {
+      setNameError(null);
+      setNameExists(false);
+    }
+  }, [form.watch("name")]);
+
   const handleBackToDropdown = () => {
     setShowOtherInput(false);
     form.setValue("religion", "");
   };
 
-  const onSubmit = (data: PatientFormValues) => {
+  const onSubmit = async (data: PatientFormValues) => {
+    if (nameExists) {
+      form.setError("name", {
+        type: "manual",
+        message: "This patient already exists!",
+      });
+      return;
+    }
     onNext(data);
   };
 
@@ -97,12 +135,24 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({ onNext }) => {
                       Full Name
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Enter patient's full name"
-                        className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-                        {...field}
-                      />
+                      <div className="relative">
+                        <Input
+                          placeholder="Enter patient's full name"
+                          className={`border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm ${
+                            nameExists ? "border-red-500" : ""
+                          }`}
+                          {...field}
+                        />
+                        {isCheckingName && (
+                          <span className="absolute right-2 top-2 text-xs text-gray-500">
+                            Checking...
+                          </span>
+                        )}
+                      </div>
                     </FormControl>
+                    {nameError && (
+                      <p className="text-red-500 text-xs mt-1">{nameError}</p>
+                    )}
                     <FormMessage className="text-red-500 text-xs" />
                   </FormItem>
                 )}
@@ -328,7 +378,10 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({ onNext }) => {
         <CardFooter className="flex justify-end mt-6">
           <Button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-6 py-2 text-sm w-full sm:w-auto"
+            disabled={nameExists}
+            className={`bg-blue-600 hover:bg-blue-700 text-white rounded-md px-6 py-2 text-sm w-full sm:w-auto ${
+              nameExists ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           >
             Next
           </Button>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Added for navigation
 import { toast } from "sonner";
 import RegularPatientForm from "@/components/regular/regular-patient-form";
 import MedicalHistoryForm from "@/components/regular/medical-history-form";
@@ -22,6 +23,7 @@ const MultiStepForm: React.FC = () => {
     {}
   );
   const [, setPatientId] = useState<number | null>(null);
+  const navigate = useNavigate(); // Added for navigation
 
   const steps = [
     { label: "Patient Information", step: 1 },
@@ -52,6 +54,7 @@ const MultiStepForm: React.FC = () => {
     treatmentData: Partial<RegularTreatmentRecord>
   ) => {
     try {
+      // Add patient
       const patientResult = await window.api.addPatient(
         patientData as Omit<RegularPatient, "patient_id">
       );
@@ -59,7 +62,9 @@ const MultiStepForm: React.FC = () => {
         throw new Error("Failed to add patient");
       }
       const newPatientId = patientResult.patient_id;
+      setPatientId(newPatientId);
 
+      // Add medical history
       const medicalHistoryWithId = {
         ...medicalHistoryData,
         patient_id: newPatientId,
@@ -71,6 +76,7 @@ const MultiStepForm: React.FC = () => {
         throw new Error("Failed to add medical history");
       }
 
+      // Add treatment record
       const treatmentWithId = { ...treatmentData, patient_id: newPatientId };
       const treatmentResult = await window.api.addTreatmentRecord(
         treatmentWithId as RegularTreatmentRecord
@@ -79,18 +85,18 @@ const MultiStepForm: React.FC = () => {
         throw new Error("Failed to add treatment record");
       }
 
-      toast.success("All data submitted successfully!");
+      // Notify user and navigate
+      toast.success("Patient added successfully! Redirecting to dashboard...");
       setStep(1);
       setPatientData({});
       setMedicalHistoryData({});
       setTreatmentRecordData({});
       setPatientId(null);
+      navigate("/"); // Navigate to dashboard to see updated counts
     } catch (error) {
-      toast.error(
-        `Error submitting data: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      toast.error(`Error submitting data: ${errorMessage}`);
     }
   };
 

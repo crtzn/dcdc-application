@@ -145,9 +145,6 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* General Information */}
           <div>
-            <h3 className="text-lg font-medium text-gray-700 mb-4">
-              General Information
-            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -155,7 +152,7 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-gray-700 font-medium">
-                      General Health
+                      Are you in good health?
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
@@ -246,7 +243,7 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
           {/* Medical Treatment */}
           <div>
             <h3 className="text-lg font-medium text-gray-700 mb-4">
-              Medical Treatment
+              Are you under medical treatment?
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
@@ -317,7 +314,8 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-gray-700 font-medium">
-                      Taking Medications?
+                      Are you taking any prescriptions / non prescription
+                      medication?
                     </FormLabel>
                     <FormControl>
                       <RadioGroup
