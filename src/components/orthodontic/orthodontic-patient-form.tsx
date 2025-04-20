@@ -22,7 +22,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Separator } from "@/components/ui/separator";
-import { OrthodonticPatient } from "@/electron/types/OrthodonticPatient";
+// We're using zod schema for type inference instead of importing OrthodonticPatient
+import { CalendarDays } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 
 const patientSchema = z.object({
   date_of_exam: z.string().min(1, "Date of exam is required"),
@@ -40,18 +51,12 @@ const patientSchema = z.object({
     required_error: "Sex is required",
   }),
   age: z.number().min(0, "Age must be positive").optional(),
-  chief_complaint: z.string().min(1, "Chief complaint is required"),
+  chief_complaint: z.string().optional(),
   past_medical_dental_history: z.string().optional(),
   prior_orthodontic_history: z.string().optional(),
-  under_treatment_or_medication: z.enum(["Yes", "No"], {
-    required_error: "Please select an option",
-  }),
-  congenital_abnormalities: z.enum(["Yes", "No"], {
-    required_error: "Please select an option",
-  }),
-  tmj_problems: z.enum(["Yes", "No"], {
-    required_error: "Please select an option",
-  }),
+  under_treatment_or_medication: z.enum(["Yes", "No"]),
+  congenital_abnormalities: z.enum(["Yes", "No"]),
+  tmj_problems: z.enum(["Yes", "No"]),
   oral_hygiene: z.enum(["Excellent", "Fair", "Poor"], {
     required_error: "Oral hygiene is required",
   }),
@@ -60,10 +65,8 @@ const patientSchema = z.object({
   }),
 });
 
-type PatientFormValues = Omit<
-  OrthodonticPatient,
-  "patient_id" | "created_at" | "updated_at"
->;
+// Define the form values type based on the schema
+type PatientFormValues = z.infer<typeof patientSchema>;
 
 interface OrthodonticPatientFormProps {
   onNext: (data: PatientFormValues) => void;
@@ -72,9 +75,11 @@ interface OrthodonticPatientFormProps {
 const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
   onNext,
 }) => {
+  const RequiredIndicator = () => <span className="text-red-500 ml-1">*</span>;
   const [nameError, setNameError] = useState<string | null>(null);
   const [isCheckingName, setIsCheckingName] = useState(false);
   const [nameExists, setNameExists] = useState(false);
+  const [date, setDate] = useState<Date>();
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
@@ -95,22 +100,46 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
       chief_complaint: "",
       past_medical_dental_history: "",
       prior_orthodontic_history: "",
-      under_treatment_or_medication: undefined,
-      congenital_abnormalities: undefined,
-      tmj_problems: undefined,
+      under_treatment_or_medication: "No",
+      congenital_abnormalities: "No",
+      tmj_problems: "No",
       oral_hygiene: undefined,
       gingival_tissues: undefined,
     },
   });
 
-  // Debounced name checking
+  // Update birthday and age when date changes
   useEffect(() => {
-    const name = form.watch("name");
-    if (name && name.length > 3) {
+    if (date) {
+      // Use the date directly since we've already normalized it with UTC
+      form.setValue("birthday", date.toISOString().split("T")[0]);
+
+      // Calculate age using the normalized date
+      const today = new Date();
+      let age = today.getFullYear() - date.getFullYear();
+      const monthDiff = today.getMonth() - date.getMonth();
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < date.getDate())
+      ) {
+        age--;
+      }
+      form.setValue("age", age);
+
+      // Log for debugging
+      console.log("Birthday set to:", date.toISOString().split("T")[0]);
+    }
+  }, [date, form]);
+
+  // Debounced name checking
+  const watchedName = form.watch("name");
+
+  useEffect(() => {
+    if (watchedName && watchedName.length > 3) {
       const timer = setTimeout(async () => {
         setIsCheckingName(true);
         try {
-          const normalizedName = name.trim().toLowerCase();
+          const normalizedName = watchedName.trim().toLowerCase();
           console.log(`Checking ortho patient name: ${normalizedName}`); // Debugging
           const exists = await window.api.checkOrthoPatientName(normalizedName);
           setNameExists(exists);
@@ -129,7 +158,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
       setNameError(null);
       setNameExists(false);
     }
-  }, [form.watch("name")]);
+  }, [watchedName, form]);
 
   const onSubmit = (data: PatientFormValues) => {
     if (nameExists) {
@@ -157,7 +186,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
-                    Date of Exam
+                    Date of Exam <RequiredIndicator />
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -176,7 +205,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
-                    Full Name
+                    Full Name <RequiredIndicator />
                   </FormLabel>
                   <FormControl>
                     <div className="relative">
@@ -228,13 +257,93 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
                     Date of Birth
                   </FormLabel>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      className="border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-xs sm:text-sm h-8 sm:h-9"
-                      {...field}
-                    />
-                  </FormControl>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal h-8 sm:h-9 border-gray-300 rounded-md text-xs sm:text-sm",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(new Date(field.value), "MM/dd/yyyy")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarDays className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-auto p-0 bg-white shadow-lg rounded-md"
+                      align="start"
+                      side="bottom"
+                      avoidCollisions
+                    >
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={(selectedDate) => {
+                          if (selectedDate) {
+                            // Create a date at noon to avoid timezone issues
+                            const normalizedDate = new Date(
+                              Date.UTC(
+                                selectedDate.getFullYear(),
+                                selectedDate.getMonth(),
+                                selectedDate.getDate(),
+                                12,
+                                0,
+                                0,
+                                0
+                              )
+                            );
+                            setDate(normalizedDate); // Update the date state
+                            console.log("Selected Date:", normalizedDate); // Debug to confirm selection
+                          }
+                        }}
+                        disabled={(date) =>
+                          date > new Date() || date < new Date("1900-01-01")
+                        }
+                        initialFocus
+                        captionLayout="dropdown-buttons"
+                        fromYear={1900}
+                        toYear={new Date().getFullYear()}
+                        className="p-3 rounded-md border border-gray-200"
+                        classNames={{
+                          months:
+                            "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                          month: "space-y-4",
+                          caption:
+                            "flex justify-center pt-1 relative items-center",
+                          caption_label: "text-sm font-medium hidden",
+                          caption_dropdowns: "flex justify-center space-x-2",
+                          dropdown_month: "relative",
+                          dropdown_year: "relative",
+                          dropdown:
+                            "border border-gray-300 rounded-md bg-white text-sm p-1 focus:ring-2 focus:ring-blue-500",
+                          nav: "flex items-center",
+                          nav_button: "hidden",
+                          nav_button_previous: "hidden",
+                          nav_button_next: "hidden",
+                          table: "w-full border-collapse space-y-1",
+                          head_row: "flex w-full mb-2",
+                          head_cell:
+                            "text-gray-600 w-10 h-10 flex items-center justify-center font-normal text-sm",
+                          row: "flex w-full space-x-1",
+                          cell: "w-10 h-10 flex items-center justify-center",
+                          day: "w-10 h-10 flex items-center justify-center font-normal text-sm rounded-md hover:bg-gray-200 focus:bg-gray-200 focus:outline-none cursor-pointer",
+                          day_selected:
+                            "bg-blue-600 text-white rounded-md font-medium",
+                          day_today:
+                            "border border-blue-500 text-blue-600 rounded-md",
+                          day_disabled:
+                            "text-gray-400 opacity-50 cursor-not-allowed",
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
               )}
@@ -245,7 +354,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
-                    Age
+                    Age <RequiredIndicator />
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -268,7 +377,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
-                    Sex
+                    Sex <RequiredIndicator />
                   </FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
@@ -363,13 +472,16 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
-                    Cellphone Number
+                    Cellphone Number <RequiredIndicator />
                   </FormLabel>
                   <FormControl>
-                    <Input
+                    <PhoneInput
+                      country={"ph"}
+                      value={field.value}
+                      onChange={(value) => field.onChange(value)}
+                      inputClass="border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-xs sm:text-sm w-full h-8 sm:h-9"
+                      dropdownClass="z-50"
                       placeholder="Enter cellphone number"
-                      className="border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-xs sm:text-sm h-8 sm:h-9"
-                      {...field}
                     />
                   </FormControl>
                   <FormMessage className="text-red-500 text-xs" />
@@ -508,7 +620,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
-                    Under Treatment/Medication
+                    Under Treatment/Medication <RequiredIndicator />
                   </FormLabel>
                   <FormControl>
                     <RadioGroup
@@ -550,7 +662,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
-                    Congenital Abnormalities
+                    Congenital Abnormalities <RequiredIndicator />
                   </FormLabel>
                   <FormControl>
                     <RadioGroup
@@ -592,7 +704,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
-                    TMJ Problems
+                    TMJ Problems <RequiredIndicator />
                   </FormLabel>
                   <FormControl>
                     <RadioGroup
@@ -634,7 +746,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
-                    Oral Hygiene
+                    Oral Hygiene <RequiredIndicator />
                   </FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
@@ -661,7 +773,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
-                    Gingival Tissues
+                    Gingival Tissues <RequiredIndicator />
                   </FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>

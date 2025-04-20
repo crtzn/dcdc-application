@@ -1,6 +1,12 @@
 // src/components/orthodontic/orthodontic-treatment-record.tsx
 import React from "react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -9,6 +15,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -56,7 +63,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
       procedure: "",
       amount_paid: undefined,
       next_schedule: "",
-      mode_of_payment: "",
+      mode_of_payment: "Cash", // Default to Cash as per user preference for boolean fields
     },
   });
 
@@ -66,32 +73,38 @@ const OrthodonticTreatmentRecordForm: React.FC<
   };
 
   return (
-    <Card className="w-full max-w-3xl mx-auto shadow-lg">
+    <Card className="w-full max-w-4xl mx-auto shadow-lg border border-gray-200 p-0 sm:p-2">
+      <CardHeader className="pb-0 pt-4 px-6">
+        <CardTitle className="text-xl font-bold text-center text-gray-800">
+          Orthodontic Treatment Record
+        </CardTitle>
+      </CardHeader>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)}>
-          <CardContent className="space-y-8">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-2">
+          <CardContent className="space-y-6 px-4 sm:px-6 pt-4">
             {/* Treatment Details */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-700 mb-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-medium text-gray-800 mb-4 border-b pb-2">
                 Treatment Details
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <FormField
                   control={form.control}
                   name="appt_no"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col space-y-1.5">
                       <FormLabel className="text-gray-700 font-medium">
-                        Appointment Number
+                        Appointment Number{" "}
+                        <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Enter appointment number"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-red-500" />
+                      <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
                   )}
                 />
@@ -99,18 +112,18 @@ const OrthodonticTreatmentRecordForm: React.FC<
                   control={form.control}
                   name="date"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col space-y-1.5">
                       <FormLabel className="text-gray-700 font-medium">
-                        Treatment Date
+                        Treatment Date <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="date"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-red-500" />
+                      <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
                   )}
                 />
@@ -118,18 +131,18 @@ const OrthodonticTreatmentRecordForm: React.FC<
                   control={form.control}
                   name="arch_wire"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col space-y-1.5">
                       <FormLabel className="text-gray-700 font-medium">
                         Arch Wire
                       </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Enter arch wire details"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-red-500" />
+                      <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
                   )}
                 />
@@ -137,37 +150,37 @@ const OrthodonticTreatmentRecordForm: React.FC<
                   control={form.control}
                   name="procedure"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col space-y-1.5">
                       <FormLabel className="text-gray-700 font-medium">
                         Procedure
                       </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Enter procedure"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-red-500" />
+                      <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
                   )}
                 />
               </div>
             </div>
 
-            <Separator />
+            <Separator className="my-2" />
 
             {/* Payment Information */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-700 mb-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-medium text-gray-800 mb-4 border-b pb-2">
                 Payment Information
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <FormField
                   control={form.control}
                   name="amount_paid"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col space-y-1.5">
                       <FormLabel className="text-gray-700 font-medium">
                         Amount Paid
                       </FormLabel>
@@ -175,7 +188,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                         <Input
                           type="number"
                           placeholder="Enter amount paid"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                           {...field}
                           onChange={(e) =>
                             field.onChange(
@@ -184,7 +197,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                           }
                         />
                       </FormControl>
-                      <FormMessage className="text-red-500" />
+                      <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
                   )}
                 />
@@ -192,18 +205,21 @@ const OrthodonticTreatmentRecordForm: React.FC<
                   control={form.control}
                   name="next_schedule"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col space-y-1.5">
                       <FormLabel className="text-gray-700 font-medium">
                         Next Schedule
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="date"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-red-500" />
+                      <FormMessage className="text-red-500 text-xs" />
+                      <FormDescription className="text-xs text-gray-500">
+                        Select the date for the next appointment
+                      </FormDescription>
                     </FormItem>
                   )}
                 />
@@ -211,45 +227,53 @@ const OrthodonticTreatmentRecordForm: React.FC<
                   control={form.control}
                   name="mode_of_payment"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col space-y-1.5">
                       <FormLabel className="text-gray-700 font-medium">
                         Mode of Payment
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
+                        defaultValue="Cash"
                       >
                         <FormControl>
-                          <SelectTrigger className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                          <SelectTrigger className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10">
                             <SelectValue placeholder="Select payment mode" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="GCash">Gcash</SelectItem>
                           <SelectItem value="Cash">Cash</SelectItem>
+                          <SelectItem value="GCash">GCash</SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormMessage className="text-red-500" />
+                      <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
                   )}
                 />
               </div>
             </div>
+
+            <div className="text-xs text-gray-500 mt-2 px-2">
+              <p>
+                Fields marked with <span className="text-red-500">*</span> are
+                required
+              </p>
+            </div>
           </CardContent>
-          <CardFooter className="flex justify-between mt-6">
+          <CardFooter className="flex flex-col sm:flex-row justify-between gap-4 px-6 py-4 bg-gray-50 rounded-b-lg">
             <Button
               type="button"
               variant="outline"
               onClick={onBack}
-              className="border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-6"
+              className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-6 h-10"
             >
               Back
             </Button>
             <Button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-6"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white rounded-md px-6 h-10"
             >
-              Submit All
+              Submit Record
             </Button>
           </CardFooter>
         </form>

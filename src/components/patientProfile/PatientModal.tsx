@@ -284,7 +284,6 @@ const PatientDetailsModal = ({
           "Amount Paid",
           "Balance",
           "Mode of Payment",
-          "Notes",
         ];
         const columnWidths = [25, 20, 20, 25, 20, 20, 15, 25, 30]; // Adjusted widths to fit within 170mm
         const data = (patient.treatmentRecords as RegularTreatmentRecord[]).map(
@@ -654,7 +653,6 @@ const PatientDetailsModal = ({
                 <TableHead>Amount Paid</TableHead>
                 <TableHead>Balance</TableHead>
                 <TableHead>Mode of Payment</TableHead>
-                <TableHead>Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -669,7 +667,6 @@ const PatientDetailsModal = ({
                     <TableCell>{formatValue(record.amount_paid)}</TableCell>
                     <TableCell>{formatValue(record.balance)}</TableCell>
                     <TableCell>{formatValue(record.mode_of_payment)}</TableCell>
-                    <TableCell>{formatValue(record.notes)}</TableCell>
                   </TableRow>
                 )
               )}

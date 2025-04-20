@@ -1,5 +1,5 @@
 // src/components/TreatmentRecordForm.tsx
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,8 +11,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -23,20 +21,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useForm } from "react-hook-form";
 
 const treatmentSchema = z.object({
   treatment_date: z.string().min(1, "Treatment date is required"),
-  tooth_number: z.string().optional(),
+  tooth_number: z.string().min(1, "Tooth number is required"),
   procedure: z.string().optional(),
   dentist_name: z.string().optional(),
   amount_charged: z
     .number()
     .min(0, "Amount charged must be positive")
-    .optional(),
-  amount_paid: z.number().min(0, "Amount paid must be positive").optional(),
+    .min(1, "Amount charged is required"),
+  amount_paid: z
+    .number()
+    .min(0, "Amount paid must be positive")
+    .min(1, "Amount paid is required"),
   balance: z.number().min(0, "Balance must be positive").optional(),
-  mode_of_payment: z.string().optional(),
-  notes: z.string().optional(),
+  mode_of_payment: z.string().min(1, "mode of payment is required"),
 });
 
 type TreatmentFormValues = z.infer<typeof treatmentSchema>;
@@ -44,11 +46,13 @@ type TreatmentFormValues = z.infer<typeof treatmentSchema>;
 interface TreatmentRecordFormProps {
   onSubmit: (data: TreatmentFormValues) => void;
   onBack: () => void;
+  isModal?: boolean; // New prop to indicate if form is in modal
 }
 
 const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
   onSubmit,
   onBack,
+  isModal = false,
 }) => {
   const form = useForm<TreatmentFormValues>({
     resolver: zodResolver(treatmentSchema),
@@ -61,248 +65,243 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
       amount_paid: 0,
       balance: 0,
       mode_of_payment: "",
-      notes: "",
     },
   });
 
+  // Watch amount_charged and amount_paid fields to calculate balance
+  const amountCharged = form.watch("amount_charged");
+  const amountPaid = form.watch("amount_paid");
+
+  useEffect(() => {
+    // Calculate balance whenever amount_charged or amount_paid changes
+    const balance = (amountCharged || 0) - (amountPaid || 0);
+    form.setValue("balance", balance >= 0 ? balance : 0);
+  }, [amountCharged, amountPaid, form]);
+
+  const RequiredIndicator = () => <span className="text-red-500 ml-1">*</span>;
+
+  // Form content that can be scrolled if in modal
+  const formContent = (
+    <CardContent className="space-y-8 p-6">
+      {/* Treatment Details */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-800">
+          Treatment Details
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="treatment_date"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-gray-700">Treatment Date*</FormLabel>
+                <FormControl>
+                  <Input
+                    type="date"
+                    className="border-gray-300 focus:ring-blue-500"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="tooth_number"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-gray-700">
+                  Tooth Number <RequiredIndicator />
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="e.g., 12, 21, etc."
+                    className="border-gray-300 focus:ring-blue-500"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="procedure"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-gray-700">
+                  Procedure <RequiredIndicator />
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="e.g., Filling, Extraction"
+                    className="border-gray-300 focus:ring-blue-500"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="dentist_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-gray-700">
+                  Dentist Name <RequiredIndicator />
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Dr. Smith"
+                    className="border-gray-300 focus:ring-blue-500"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+
+      <Separator className="my-4" />
+
+      {/* Payment Information */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-800">
+          Payment Information
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="amount_charged"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-gray-700">
+                  Amount Charged (₱) <RequiredIndicator />
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    className="border-gray-300 focus:ring-blue-500"
+                    {...field}
+                    onChange={(e) =>
+                      field.onChange(parseFloat(e.target.value) || 0)
+                    }
+                  />
+                </FormControl>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="amount_paid"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-gray-700">
+                  Amount Paid (₱) <RequiredIndicator />
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    className="border-gray-300 focus:ring-blue-500"
+                    {...field}
+                    onChange={(e) =>
+                      field.onChange(parseFloat(e.target.value) || 0)
+                    }
+                  />
+                </FormControl>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="balance"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-gray-700">Balance (₱)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    className="border-gray-300 bg-gray-100 focus:ring-blue-500"
+                    {...field}
+                    readOnly
+                  />
+                </FormControl>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="mode_of_payment"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-gray-700">
+                  Mode of Payment <RequiredIndicator />
+                </FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="border-gray-300 focus:ring-blue-500">
+                      <SelectValue placeholder="Select payment mode" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="GCash">GCash</SelectItem>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Credit Card">Credit Card</SelectItem>
+                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+    </CardContent>
+  );
+
   return (
-    <Card className="w-full max-w-3xl mx-auto shadow-lg">
+    <Card
+      className={`w-full mx-auto shadow-lg ${
+        isModal ? "border-none shadow-none" : "max-w-3xl"
+      }`}
+    >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-8">
-            {/* Treatment Details */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-700 mb-4">
-                Treatment Details
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="treatment_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        Treatment Date
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="tooth_number"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        Tooth Number
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter tooth number"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="procedure"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        Procedure
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter procedure"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="dentist_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        Dentist Name
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter dentist name"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500" />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Payment Information */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-700 mb-4">
-                Payment Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="amount_charged"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        Amount Charged
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="Enter amount charged"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(parseFloat(e.target.value) || 0)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="amount_paid"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        Amount Paid
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="Enter amount paid"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(parseFloat(e.target.value) || 0)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="balance"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        Balance
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="Enter balance"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(parseFloat(e.target.value) || 0)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="mode_of_payment"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        Mode of Payment
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                            <SelectValue placeholder="Select payment mode" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="GCash">Gcash</SelectItem>
-                          <SelectItem value="Cash">Cash</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage className="text-red-500" />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Additional Notes */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-700 mb-4">
-                Additional Notes
-              </h3>
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">
-                      Notes
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Enter additional notes"
-                        className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-500" />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between mt-6">
+          {isModal ? (
+            <ScrollArea className="h-[calc(100vh-200px)]">
+              {formContent}
+            </ScrollArea>
+          ) : (
+            formContent
+          )}
+          <CardFooter
+            className={`flex justify-between px-6 pb-6 ${
+              isModal ? "sticky bottom-0 bg-white border-t" : ""
+            }`}
+          >
             <Button
               type="button"
               variant="outline"
               onClick={onBack}
-              className="border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-6"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6"
             >
               Back
             </Button>
             <Button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-6"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6"
             >
-              Submit All
+              Save Treatment
             </Button>
           </CardFooter>
         </form>
