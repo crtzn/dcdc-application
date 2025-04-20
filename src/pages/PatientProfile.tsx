@@ -111,11 +111,18 @@ const PatientList = () => {
       }
     };
     fetchPatients();
-    const unsubscribe = window.api.onPatientAdded(() => {
+    const unsubscribeAdded = window.api.onPatientAdded(() => {
       console.log("Patient added event received, refetching patients");
       fetchPatients();
     });
-    return () => unsubscribe();
+    const unsubscribeUpdated = window.api.onPatientUpdated(() => {
+      console.log("Patient updated event received, refetching patients");
+      fetchPatients();
+    });
+    return () => {
+      unsubscribeAdded();
+      unsubscribeUpdated();
+    };
   }, [searchName, typeFilter, genderFilter, sortBy, sortDirection]);
 
   const handleSort = (column: string) => {

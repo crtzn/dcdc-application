@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -72,6 +72,10 @@ interface OrthodonticPatientFormProps {
 const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
   onNext,
 }) => {
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [isCheckingName, setIsCheckingName] = useState(false);
+  const [nameExists, setNameExists] = useState(false);
+
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
@@ -99,7 +103,42 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
     },
   });
 
+  // Debounced name checking
+  useEffect(() => {
+    const name = form.watch("name");
+    if (name && name.length > 3) {
+      const timer = setTimeout(async () => {
+        setIsCheckingName(true);
+        try {
+          const normalizedName = name.trim().toLowerCase();
+          console.log(`Checking ortho patient name: ${normalizedName}`); // Debugging
+          const exists = await window.api.checkOrthoPatientName(normalizedName);
+          setNameExists(exists);
+          setNameError(
+            exists ? "A patient with this name already exists!" : null
+          );
+        } catch (error) {
+          console.error("Error checking patient name:", error);
+          setNameError("Error checking name. Please try again.");
+        } finally {
+          setIsCheckingName(false);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setNameError(null);
+      setNameExists(false);
+    }
+  }, [form.watch("name")]);
+
   const onSubmit = (data: PatientFormValues) => {
+    if (nameExists) {
+      form.setError("name", {
+        type: "manual",
+        message: "This patient already exists!",
+      });
+      return;
+    }
     onNext(data);
   };
 
@@ -140,12 +179,24 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
                     Full Name
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Enter patient's full name"
-                      className="border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-xs sm:text-sm h-8 sm:h-9"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <Input
+                        placeholder="Enter patient's full name"
+                        className={`border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-xs sm:text-sm h-8 sm:h-9 ${
+                          nameExists ? "border-red-500" : ""
+                        }`}
+                        {...field}
+                      />
+                      {isCheckingName && (
+                        <span className="absolute right-2 top-2 text-xs text-gray-500">
+                          Checking...
+                        </span>
+                      )}
+                    </div>
                   </FormControl>
+                  {nameError && (
+                    <p className="text-red-500 text-xs mt-1">{nameError}</p>
+                  )}
                   <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
               )}
@@ -637,7 +688,12 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
         <div className="flex justify-end mt-4">
           <Button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-1.5 text-xs sm:text-sm w-full sm:w-auto"
+            disabled={nameExists || isCheckingName}
+            className={`bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-1.5 text-xs sm:text-sm w-full sm:w-auto ${
+              nameExists || isCheckingName
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
           >
             Next
           </Button>

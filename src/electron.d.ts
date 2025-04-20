@@ -86,6 +86,20 @@ interface ElectronAPI {
     };
     error?: string;
   }>;
+  updateRegularPatient: (
+    patient_id: number,
+    patient: Partial<Omit<RegularPatient, "patient_id">>
+  ) => Promise<{ success: boolean; error?: string }>;
+  updateOrthodonticPatient: (
+    patient_id: number,
+    patient: Partial<Omit<OrthodonticPatient, "patient_id">>
+  ) => Promise<{ success: boolean; error?: string }>;
+  updateMedicalHistory: (
+    history_id: number,
+    history: Partial<Omit<RegularMedicalHistory, "history_id" | "patient_id">>
+  ) => Promise<{ success: boolean; error?: string }>;
+  onPatientUpdated: (callback: () => void) => () => void;
+
   onPatientAdded: (callback: () => void) => () => void;
 }
 

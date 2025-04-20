@@ -54,7 +54,24 @@ electron.contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("get-patient-details", patientId, type),
   onPatientAdded: (callback: () => void) => {
     ipcRenderer.on("patient-added", callback);
+
     // Return cleanup function
     return () => ipcRenderer.removeListener("patient-added", callback);
+  },
+  updateRegularPatient: (
+    patient_id: number,
+    patient: Partial<Omit<RegularPatient, "patient_id">>
+  ) => ipcRenderer.invoke("update-regular-patient", patient_id, patient),
+  updateOrthodonticPatient: (
+    patient_id: number,
+    patient: Partial<Omit<OrthodonticPatient, "patient_id">>
+  ) => ipcRenderer.invoke("update-orthodontic-patient", patient_id, patient),
+  updateMedicalHistory: (
+    history_id: number,
+    history: Partial<Omit<RegularMedicalHistory, "history_id" | "patient_id">>
+  ) => ipcRenderer.invoke("update-medical-history", history_id, history),
+  onPatientUpdated: (callback: () => void) => {
+    ipcRenderer.on("patient-updated", callback);
+    return () => ipcRenderer.removeListener("patient-updated", callback);
   },
 });

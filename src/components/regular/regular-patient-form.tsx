@@ -81,7 +81,9 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({ onNext }) => {
       const timer = setTimeout(async () => {
         setIsCheckingName(true);
         try {
-          const exists = await window.api.checkPatientName(name);
+          // Convert the input name to lowercase for case-insensitive comparison
+          const normalizedName = name.toLowerCase();
+          const exists = await window.api.checkPatientName(normalizedName);
           setNameExists(exists);
           setNameError(
             exists ? "A patient with this name already exists!" : null

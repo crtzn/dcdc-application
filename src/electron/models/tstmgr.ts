@@ -393,7 +393,7 @@ export function addOrthodonticTreatmentRecord(
 export function checkOrthoPatientNameExists(name: string): boolean {
   try {
     const stmt = db.prepare(
-      "SELECT 1 FROM orthodontic_patients WHERE name = ?"
+      "SELECT 1 FROM orthodontic_patients WHERE LOWER(name) = LOWER(?)"
     );
     return stmt.get(name) !== undefined;
   } catch (error) {
@@ -700,5 +700,98 @@ export function getPatientDetails(
       success: false,
       error: errorMessage,
     };
+  }
+}
+
+// new update the regular patients
+
+// Update regular patient information
+export function updateRegularPatient(
+  patient_id: number,
+  patient: Partial<Omit<RegularPatient, "patient_id">>
+): {
+  success: boolean;
+  error?: string;
+} {
+  try {
+    const fields = Object.keys(patient)
+      .map((key) => `${key} = ?`)
+      .join(", ");
+    const values = Object.values(patient);
+    if (!fields) {
+      return { success: false, error: "No fields to update" };
+    }
+    const stmt = db.prepare(`
+      UPDATE regular_patients
+      SET ${fields}
+      WHERE patient_id = ?
+    `);
+    stmt.run(...values, patient_id);
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error updating regular patient:", errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+// Update orthodontic patient information
+export function updateOrthodonticPatient(
+  patient_id: number,
+  patient: Partial<Omit<OrthodonticPatient, "patient_id">>
+): {
+  success: boolean;
+  error?: string;
+} {
+  try {
+    const fields = Object.keys(patient)
+      .map((key) => `${key} = ?`)
+      .join(", ");
+    const values = Object.values(patient);
+    if (!fields) {
+      return { success: false, error: "No fields to update" };
+    }
+    const stmt = db.prepare(`
+      UPDATE orthodontic_patients
+      SET ${fields}
+      WHERE patient_id = ?
+    `);
+    stmt.run(...values, patient_id);
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error updating orthodontic patient:", errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+// Update medical history (for regular patients)
+
+export function updateMedicalHistory(
+  history_id: number,
+  history: Partial<Omit<RegularMedicalHistory, "history_id" | "patient_id">>
+): {
+  success: boolean;
+  error?: string;
+} {
+  try {
+    const fields = Object.keys(history)
+      .map((key) => `${key} = ?`)
+      .join(", ");
+    const values = Object.values(history);
+    if (!fields) {
+      return { success: false, error: "No fields to update" };
+    }
+    const stmt = db.prepare(`
+      UPDATE regular_medical_history
+      SET ${fields}
+      WHERE history_id = ?
+    `);
+    stmt.run(...values, history_id);
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error updating medical history:", errorMessage);
+    return { success: false, error: errorMessage };
   }
 }

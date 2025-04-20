@@ -16,6 +16,9 @@ import {
   getRecentPatients,
   getFilteredPatients,
   getPatientDetails,
+  updateOrthodonticPatient,
+  updateMedicalHistory,
+  updateRegularPatient,
 } from "./models/tstmgr.js";
 import {
   RegularPatient,
@@ -146,6 +149,7 @@ ipcMain.handle("check-patient-name", async (_event, name: string) => {
 });
 
 ipcMain.handle("check-ortho-patient-name", async (_event, name: string) => {
+  console.log(`Received check-ortho-patient-name for: ${name}`);
   try {
     return await checkOrthoPatientNameExists(name);
   } catch (error) {
@@ -217,6 +221,68 @@ ipcMain.handle(
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       return { success: false, error: errorMessage };
+    }
+  }
+);
+
+// new handle
+
+ipcMain.handle(
+  "update-regular-patient",
+  async (
+    _event,
+    patient_id: number,
+    patient: Partial<Omit<RegularPatient, "patient_id">>
+  ) => {
+    try {
+      const result = await updateRegularPatient(patient_id, patient);
+      if (result.success) {
+        BrowserWindow.getAllWindows().forEach((win) => {
+          win.webContents.send("patient-updated");
+        });
+      }
+      return result;
+    } catch (error) {
+      console.error("IPC update-regular-patient error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+ipcMain.handle(
+  "update-orthodontic-patient",
+  async (
+    _event,
+    patient_id: number,
+    patient: Partial<Omit<OrthodonticPatient, "patient_id">>
+  ) => {
+    try {
+      const result = await updateOrthodonticPatient(patient_id, patient);
+      if (result.success) {
+        BrowserWindow.getAllWindows().forEach((win) => {
+          win.webContents.send("patient-updated");
+        });
+      }
+      return result;
+    } catch (error) {
+      console.error("IPC update-orthodontic-patient error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+ipcMain.handle(
+  "update-medical-history",
+  async (
+    _event,
+    history_id: number,
+    history: Partial<Omit<RegularMedicalHistory, "history_id" | "patient_id">>
+  ) => {
+    try {
+      return await updateMedicalHistory(history_id, history);
+    } catch (error) {
+      console.error("IPC update-medical-history error:", error);
+      return { success: false, error: String(error) };
     }
   }
 );
