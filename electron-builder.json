@@ -17,6 +17,6 @@
     "category": "Medical"
   },
   "win": {
-    "target": ["portable", "msi"]
+    "target": ["nsis", "portable"]
   }
 }
