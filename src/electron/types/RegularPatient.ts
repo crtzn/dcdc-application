@@ -44,9 +44,9 @@ export interface RegularTreatmentRecord {
   tooth_number?: string;
   procedure?: string;
   dentist_name?: string;
-  amount_charged?: number;
-  amount_paid?: number;
-  balance?: number;
+  amount_charged?: number | null;
+  amount_paid?: number | null;
+  balance?: number | null;
   mode_of_payment?: string;
   notes?: string;
 }

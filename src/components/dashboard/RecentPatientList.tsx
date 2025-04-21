@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import PatientModal from "@/components/PatientModal";
 
 interface Patient {
   name: string;
@@ -94,8 +95,11 @@ const RecentPatientsList: React.FC = () => {
   return (
     <Card className="w-full shadow-md">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-800">
+        <CardTitle className="flex justify-between text-lg font-semibold text-gray-800">
           Recent Patients
+          <div>
+            <PatientModal />
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>

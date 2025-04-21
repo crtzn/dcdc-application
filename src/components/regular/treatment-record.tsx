@@ -32,12 +32,16 @@ const treatmentSchema = z.object({
   amount_charged: z
     .number()
     .min(0, "Amount charged must be positive")
-    .min(1, "Amount charged is required"),
+    .min(1, "Amount charged is required")
+    .optional()
+    .nullable(),
   amount_paid: z
     .number()
     .min(0, "Amount paid must be positive")
-    .min(1, "Amount paid is required"),
-  balance: z.number().min(0, "Balance must be positive").optional(),
+    .min(1, "Amount paid is required")
+    .optional()
+    .nullable(),
+  balance: z.number().min(0, "Balance must be positive").optional().nullable(),
   mode_of_payment: z.string().min(1, "mode of payment is required"),
 });
 
@@ -57,13 +61,13 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
   const form = useForm<TreatmentFormValues>({
     resolver: zodResolver(treatmentSchema),
     defaultValues: {
-      treatment_date: new Date().toISOString().split("T")[0],
+      treatment_date: new Date().toLocaleDateString("en-CA"),
       tooth_number: "",
       procedure: "",
       dentist_name: "",
-      amount_charged: 0,
-      amount_paid: 0,
-      balance: 0,
+      amount_charged: undefined,
+      amount_paid: undefined,
+      balance: undefined,
       mode_of_payment: "",
     },
   });
@@ -74,8 +78,12 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
 
   useEffect(() => {
     // Calculate balance whenever amount_charged or amount_paid changes
-    const balance = (amountCharged || 0) - (amountPaid || 0);
-    form.setValue("balance", balance >= 0 ? balance : 0);
+    if (amountCharged !== undefined || amountPaid !== undefined) {
+      const balance = (amountCharged || 0) - (amountPaid || 0);
+      form.setValue("balance", balance >= 0 ? balance : 0);
+    } else {
+      form.setValue("balance", undefined);
+    }
   }, [amountCharged, amountPaid, form]);
 
   const RequiredIndicator = () => <span className="text-red-500 ml-1">*</span>;
@@ -185,11 +193,18 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
                 <FormControl>
                   <Input
                     type="number"
-                    placeholder="0.00"
+                    placeholder="Amount Charged"
                     className="border-gray-300 focus:ring-blue-500"
                     {...field}
+                    value={
+                      field.value === undefined || field.value === null
+                        ? ""
+                        : field.value
+                    }
                     onChange={(e) =>
-                      field.onChange(parseFloat(e.target.value) || 0)
+                      field.onChange(
+                        e.target.value ? parseFloat(e.target.value) : undefined
+                      )
                     }
                   />
                 </FormControl>
@@ -208,11 +223,18 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
                 <FormControl>
                   <Input
                     type="number"
-                    placeholder="0.00"
+                    placeholder="Amount Paid"
                     className="border-gray-300 focus:ring-blue-500"
                     {...field}
+                    value={
+                      field.value === undefined || field.value === null
+                        ? ""
+                        : field.value
+                    }
                     onChange={(e) =>
-                      field.onChange(parseFloat(e.target.value) || 0)
+                      field.onChange(
+                        e.target.value ? parseFloat(e.target.value) : undefined
+                      )
                     }
                   />
                 </FormControl>
@@ -232,6 +254,11 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
                     placeholder="0.00"
                     className="border-gray-300 bg-gray-100 focus:ring-blue-500"
                     {...field}
+                    value={
+                      field.value === undefined || field.value === null
+                        ? ""
+                        : field.value
+                    }
                     readOnly
                   />
                 </FormControl>

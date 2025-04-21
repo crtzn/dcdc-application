@@ -822,7 +822,7 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
             />
           </div>
 
-          <CardFooter className="flex justify-between mt-6 sticky bottom-0 bg-white py-4 border-t border-gray-200">
+          <CardFooter className="flex justify-between mt-6 sticky bottom-0 bg-white py-[3rem] border-t border-gray-200">
             <Button
               type="button"
               variant="outline"
