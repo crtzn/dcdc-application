@@ -117,7 +117,7 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({ onNext }) => {
       const timer = setTimeout(async () => {
         setIsCheckingName(true);
         try {
-          const normalizedName = watchedName.toLowerCase();
+          const normalizedName = watchedName.trim().toLowerCase();
           const exists = await window.api.checkPatientName(normalizedName);
           setNameExists(exists);
           setNameError(
@@ -150,7 +150,12 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({ onNext }) => {
       });
       return;
     }
-    onNext(data);
+    // Trim the name before submitting
+    const trimmedData = {
+      ...data,
+      name: data.name.trim(),
+    };
+    onNext(trimmedData);
   };
 
   const RequiredIndicator = () => <span className="text-red-500 ml-1">*</span>;

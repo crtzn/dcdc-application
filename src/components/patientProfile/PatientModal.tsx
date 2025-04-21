@@ -32,6 +32,9 @@ import {
 } from "@/electron/types/OrthodonticPatient";
 import { useState } from "react";
 import jsPDF from "jspdf";
+import RegularPatientEditForm from "@/components/regular/patientEditForm";
+import OrthodonticPatientEditForm from "@/components/orthodontic/orthodonticPatientEditForm";
+import MedicalHistoryEditForm from "@/components/regular/medicalHistoryEditForm";
 
 interface PatientDetailsModalProps {
   patient: {
@@ -53,6 +56,11 @@ const PatientDetailsModal = ({
   onRefresh,
 }: PatientDetailsModalProps) => {
   const [showTreatmentForm, setShowTreatmentForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showMedicalHistoryEditForm, setShowMedicalHistoryEditForm] =
+    useState(false);
+  const [selectedMedicalHistory, setSelectedMedicalHistory] =
+    useState<RegularMedicalHistory | null>(null);
 
   if (!patient || !type) return null;
 
@@ -77,21 +85,27 @@ const PatientDetailsModal = ({
     return String(value);
   };
 
-  const handleTreatmentSubmit = async (data: any) => {
+  const handleTreatmentSubmit = async (
+    data: Partial<RegularTreatmentRecord | OrthodonticTreatmentRecord>
+  ) => {
     try {
       let result;
       if (type === "Regular") {
-        const treatmentData: RegularTreatmentRecord = {
+        const treatmentData = {
           patient_id: patient.info.patient_id!,
           ...data,
         };
-        result = await window.api.addTreatmentRecord(treatmentData);
+        result = await window.api.addTreatmentRecord(
+          treatmentData as RegularTreatmentRecord
+        );
       } else {
-        const treatmentData: OrthodonticTreatmentRecord = {
+        const treatmentData = {
           patient_id: patient.info.patient_id!,
           ...data,
         };
-        result = await window.api.addOrthodonticTreatmentRecord(treatmentData);
+        result = await window.api.addOrthodonticTreatmentRecord(
+          treatmentData as OrthodonticTreatmentRecord
+        );
       }
       if (result.success) {
         toast.success("Treatment record added successfully");
@@ -420,6 +434,65 @@ const PatientDetailsModal = ({
     toast.success("PDF exported successfully!");
   };
 
+  const handleEditSubmit = async (
+    data: Partial<Omit<RegularPatient | OrthodonticPatient, "patient_id">>
+  ) => {
+    try {
+      let result;
+      if (type === "Regular") {
+        result = await window.api.updateRegularPatient(
+          patient.info.patient_id!,
+          data as Partial<Omit<RegularPatient, "patient_id">>
+        );
+      } else {
+        result = await window.api.updateOrthodonticPatient(
+          patient.info.patient_id!,
+          data as Partial<Omit<OrthodonticPatient, "patient_id">>
+        );
+      }
+
+      if (result.success) {
+        toast.success("Patient information updated successfully");
+        setShowEditForm(false);
+        onRefresh();
+      } else {
+        throw new Error(result.error || "Failed to update patient information");
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      toast.error(`Error updating patient information: ${errorMessage}`);
+    }
+  };
+
+  const handleMedicalHistoryEditSubmit = async (
+    data: Partial<Omit<RegularMedicalHistory, "history_id" | "patient_id">>
+  ) => {
+    try {
+      if (!selectedMedicalHistory || !selectedMedicalHistory.history_id) {
+        throw new Error("No medical history selected");
+      }
+
+      const result = await window.api.updateMedicalHistory(
+        selectedMedicalHistory.history_id,
+        data
+      );
+
+      if (result.success) {
+        toast.success("Medical history updated successfully");
+        setShowMedicalHistoryEditForm(false);
+        setSelectedMedicalHistory(null);
+        onRefresh();
+      } else {
+        throw new Error(result.error || "Failed to update medical history");
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      toast.error(`Error updating medical history: ${errorMessage}`);
+    }
+  };
+
   const renderPatientInfo = () => {
     const fields =
       type === "Regular"
@@ -476,19 +549,49 @@ const PatientDetailsModal = ({
           ];
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-        {fields.map(({ key, label }) => (
-          <div key={key} className="flex flex-col">
-            <span className="font-semibold text-sm text-gray-700">{label}</span>
-            <span className="text-gray-600 text-sm">
-              {formatValue(
-                (patient.info as RegularPatient | OrthodonticPatient)[
-                  key as keyof (RegularPatient | OrthodonticPatient)
-                ]
-              )}
-            </span>
-          </div>
-        ))}
+      <div className="relative">
+        <div className="flex justify-between items-center p-4 bg-gray-50 rounded-t-lg border-b">
+          <h3 className="text-lg font-semibold text-gray-800">
+            Patient Information
+          </h3>
+          <Button
+            onClick={() => setShowEditForm(true)}
+            className="bg-[#2776ab] text-white hover:bg-[#2776abeb] flex items-center gap-2"
+            size="sm"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Edit Patient Info
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+          {fields.map(({ key, label }) => (
+            <div key={key} className="flex flex-col">
+              <span className="font-semibold text-sm text-gray-700">
+                {label}
+              </span>
+              <span className="text-gray-600 text-sm">
+                {formatValue(
+                  (patient.info as RegularPatient | OrthodonticPatient)[
+                    key as keyof (RegularPatient | OrthodonticPatient)
+                  ]
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
@@ -512,8 +615,34 @@ const PatientDetailsModal = ({
           {patient.medicalHistory.map((history) => (
             <div
               key={history.history_id}
-              className="border rounded-lg p-4 bg-gray-50 shadow-sm"
+              className="border rounded-lg p-4 bg-gray-50 shadow-sm relative"
             >
+              <div className="absolute top-2 right-2">
+                <Button
+                  onClick={() => {
+                    setSelectedMedicalHistory(history);
+                    setShowMedicalHistoryEditForm(true);
+                  }}
+                  className="bg-blue-600 text-white hover:bg-blue-700 h-8 px-2 py-1 text-xs flex items-center gap-1"
+                  size="sm"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  Edit
+                </Button>
+              </div>
               <h3 className="text-lg font-semibold text-gray-800 mb-2">
                 Medical History #{history.history_id}
               </h3>
@@ -738,6 +867,102 @@ const PatientDetailsModal = ({
     );
   };
 
+  const renderEditForm = () => {
+    if (!showEditForm) return null;
+
+    return (
+      <Dialog open={showEditForm} onOpenChange={setShowEditForm}>
+        <DialogContent
+          className="max-w-3xl"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              Edit Patient Information
+            </DialogTitle>
+            <p className="text-gray-500 text-sm mt-1">
+              Update patient details below. Fields marked with * are required.
+            </p>
+          </DialogHeader>
+          {type === "Regular" ? (
+            <RegularPatientEditForm
+              patient={patient.info as RegularPatient}
+              onSubmit={handleEditSubmit}
+              onCancel={() => setShowEditForm(false)}
+            />
+          ) : (
+            <OrthodonticPatientEditForm
+              patient={patient.info as OrthodonticPatient}
+              onSubmit={handleEditSubmit}
+              onCancel={() => setShowEditForm(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const renderMedicalHistoryEditForm = () => {
+    if (!showMedicalHistoryEditForm || !selectedMedicalHistory) return null;
+
+    return (
+      <Dialog
+        open={showMedicalHistoryEditForm}
+        onOpenChange={setShowMedicalHistoryEditForm}
+      >
+        <DialogContent
+          className="max-w-3xl"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              Edit Medical History
+            </DialogTitle>
+            <p className="text-gray-500 text-sm mt-1">
+              Update medical history details below.
+            </p>
+          </DialogHeader>
+          <MedicalHistoryEditForm
+            history={selectedMedicalHistory}
+            onSubmit={handleMedicalHistoryEditSubmit}
+            onCancel={() => {
+              setShowMedicalHistoryEditForm(false);
+              setSelectedMedicalHistory(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-full sm:max-w-[80rem] p-6 rounded-lg bg-white shadow-lg">
@@ -797,22 +1022,13 @@ const PatientDetailsModal = ({
         </Tabs>
         <DialogFooter className="mt-6 flex justify-end gap-4">
           <Button
-            variant="outline"
-            className="border-gray-300 text-gray-700 hover:bg-gray-100"
-            onClick={() =>
-              console.log("Edit patient:", patient.info.patient_id)
-            }
-          >
-            Edit (Coming Soon)
-          </Button>
-          <Button
-            className="bg-purple-600 text-white hover:bg-purple-700"
+            className="bg-[#24336f] text-white hover:bg-[#24336fd8]"
             onClick={exportToPDF}
           >
             Export to PDF
           </Button>
           <Button
-            className="bg-blue-600 text-white hover:bg-blue-700"
+            className="bg-[#c84e67] text-white hover:bg-[#c84e66e5]"
             onClick={onClose}
           >
             Close
@@ -820,6 +1036,8 @@ const PatientDetailsModal = ({
         </DialogFooter>
       </DialogContent>
       {renderTreatmentForm()}
+      {renderEditForm()}
+      {renderMedicalHistoryEditForm()}
     </Dialog>
   );
 };
