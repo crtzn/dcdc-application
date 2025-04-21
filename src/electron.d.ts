@@ -105,6 +105,11 @@ interface ElectronAPI {
     data?: Array<{ year: number; month: number; count: number }>;
     error?: string;
   }>;
+  getNextOrthoAppointmentNumber: (patientId: number) => Promise<{
+    success: boolean;
+    next_appt_no?: number;
+    error?: string;
+  }>;
   onPatientUpdated: (callback: () => void) => () => void;
   onPatientAdded: (callback: () => void) => () => void;
 
