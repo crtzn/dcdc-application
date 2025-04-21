@@ -50,3 +50,16 @@ export interface RegularTreatmentRecord {
   mode_of_payment?: string;
   notes?: string;
 }
+
+// types/PaymentHistory.ts
+export interface PaymentHistory {
+  payment_id?: number; // Auto-incremented
+  patient_id: number; // Foreign key to regular_patients
+  treatment_record_id?: number; // Optional reference to the treatment record
+  payment_date: string;
+  amount_paid: number;
+  payment_method: string;
+  remaining_balance: number;
+  notes?: string;
+  created_at?: string;
+}

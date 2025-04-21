@@ -8,6 +8,7 @@ import {
   RegularPatient,
   RegularMedicalHistory,
   RegularTreatmentRecord,
+  PaymentHistory,
 } from "../types/RegularPatient.js";
 import {
   OrthodonticPatient,
@@ -137,6 +138,23 @@ function initializeDatabase() {
         next_schedule TEXT,
         mode_of_payment TEXT,
         FOREIGN KEY (patient_id) REFERENCES orthodontic_patients(patient_id)
+      )
+    `);
+
+    // Create payment_history table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS payment_history (
+        payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        treatment_record_id INTEGER,
+        payment_date TEXT NOT NULL,
+        amount_paid REAL NOT NULL,
+        payment_method TEXT NOT NULL,
+        remaining_balance REAL NOT NULL,
+        notes TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (patient_id) REFERENCES regular_patients(patient_id),
+        FOREIGN KEY (treatment_record_id) REFERENCES regular_treatment_records(record_id)
       )
     `);
 
@@ -618,6 +636,7 @@ export function getPatientDetails(
     info: RegularPatient | OrthodonticPatient;
     medicalHistory?: RegularMedicalHistory[];
     treatmentRecords?: RegularTreatmentRecord[] | OrthodonticTreatmentRecord[];
+    paymentHistory?: PaymentHistory[];
   };
   error?: string;
 } {
@@ -628,6 +647,7 @@ export function getPatientDetails(
       | RegularTreatmentRecord[]
       | OrthodonticTreatmentRecord[]
       | undefined;
+    let paymentHistory: PaymentHistory[] | undefined;
 
     if (type === "Regular") {
       // Fetch patient info
@@ -665,6 +685,16 @@ export function getPatientDetails(
         ORDER BY treatment_date DESC
       `);
       treatmentRecords = recordsStmt.all(patientId) as RegularTreatmentRecord[];
+
+      // Fetch payment history
+      const paymentStmt = db.prepare(`
+        SELECT payment_id, patient_id, treatment_record_id, payment_date,
+               amount_paid, payment_method, remaining_balance, notes, created_at
+        FROM payment_history
+        WHERE patient_id = ?
+        ORDER BY payment_date DESC, created_at DESC
+      `);
+      paymentHistory = paymentStmt.all(patientId) as PaymentHistory[];
     } else if (type === "Ortho") {
       // Fetch patient info
       const infoStmt = db.prepare(`
@@ -707,6 +737,7 @@ export function getPatientDetails(
         info: patientInfo,
         medicalHistory,
         treatmentRecords,
+        paymentHistory,
       },
     };
   } catch (error) {
@@ -719,7 +750,104 @@ export function getPatientDetails(
   }
 }
 
-// new update the regular patients
+// Add payment history record
+export function addPaymentHistory(
+  payment: Omit<PaymentHistory, "payment_id" | "created_at">
+): {
+  success: boolean;
+  payment_id?: number;
+  error?: string;
+} {
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO payment_history (
+        patient_id, treatment_record_id, payment_date, amount_paid,
+        payment_method, remaining_balance, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const result = stmt.run(
+      payment.patient_id,
+      payment.treatment_record_id || null,
+      payment.payment_date,
+      payment.amount_paid,
+      payment.payment_method,
+      payment.remaining_balance,
+      payment.notes || null
+    );
+
+    return {
+      success: true,
+      payment_id: Number(result.lastInsertRowid),
+    };
+  } catch (error) {
+    console.error("Error adding payment history:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+// Get payment history for a patient
+export function getPaymentHistory(patientId: number): {
+  success: boolean;
+  payments?: PaymentHistory[];
+  error?: string;
+} {
+  try {
+    const stmt = db.prepare(`
+      SELECT payment_id, patient_id, treatment_record_id, payment_date,
+             amount_paid, payment_method, remaining_balance, notes, created_at
+      FROM payment_history
+      WHERE patient_id = ?
+      ORDER BY payment_date DESC, created_at DESC
+    `);
+
+    const payments = stmt.all(patientId) as PaymentHistory[];
+
+    return {
+      success: true,
+      payments,
+    };
+  } catch (error) {
+    console.error("Error fetching payment history:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+// Update treatment record balance
+export function updateTreatmentRecordBalance(
+  recordId: number,
+  newBalance: number
+): {
+  success: boolean;
+  error?: string;
+} {
+  try {
+    const stmt = db.prepare(`
+      UPDATE regular_treatment_records
+      SET balance = ?
+      WHERE record_id = ?
+    `);
+
+    stmt.run(newBalance, recordId);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating treatment record balance:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
 
 // Update regular patient information
 export function updateRegularPatient(

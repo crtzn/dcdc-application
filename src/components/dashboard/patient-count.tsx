@@ -80,7 +80,7 @@ export function TotalPatientCount() {
   }, []);
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container py-6">
       {loading ? (
         <div className="flex items-center justify-center py-10">
           <Loader2 className="h-8 w-8 animate-spin text-[#24336f]" />

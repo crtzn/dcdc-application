@@ -20,6 +20,9 @@ import {
   updateMedicalHistory,
   updateRegularPatient,
   getMonthlyPatientCounts,
+  addPaymentHistory,
+  getPaymentHistory,
+  updateTreatmentRecordBalance,
 } from "./models/tstmgr.js";
 import {
   RegularPatient,
@@ -296,3 +299,52 @@ ipcMain.handle("get-monthly-patient-counts", async () => {
     return { success: false, error: String(error) };
   }
 });
+
+// Payment history handlers
+ipcMain.handle(
+  "add-payment-history",
+  async (
+    _event,
+    payment: Omit<PaymentHistory, "payment_id" | "created_at">
+  ) => {
+    try {
+      const result = await addPaymentHistory(payment);
+      if (result.success) {
+        BrowserWindow.getAllWindows().forEach((win) => {
+          win.webContents.send("payment-added");
+        });
+      }
+      return result;
+    } catch (error) {
+      console.error("IPC add-payment-history error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+ipcMain.handle("get-payment-history", async (_event, patientId: number) => {
+  try {
+    return await getPaymentHistory(patientId);
+  } catch (error) {
+    console.error("IPC get-payment-history error:", error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle(
+  "update-treatment-record-balance",
+  async (_event, recordId: number, newBalance: number) => {
+    try {
+      const result = await updateTreatmentRecordBalance(recordId, newBalance);
+      if (result.success) {
+        BrowserWindow.getAllWindows().forEach((win) => {
+          win.webContents.send("treatment-record-updated");
+        });
+      }
+      return result;
+    } catch (error) {
+      console.error("IPC update-treatment-record-balance error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);

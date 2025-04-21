@@ -4,6 +4,7 @@ import {
   RegularPatient,
   RegularMedicalHistory,
   RegularTreatmentRecord,
+  PaymentHistory,
 } from "./types/RegularPatient.js";
 
 interface ElectronAPI {
@@ -83,6 +84,7 @@ interface ElectronAPI {
       treatmentRecords?:
         | RegularTreatmentRecord[]
         | OrthodonticTreatmentRecord[];
+      paymentHistory?: PaymentHistory[];
     };
     error?: string;
   }>;
@@ -104,8 +106,23 @@ interface ElectronAPI {
     error?: string;
   }>;
   onPatientUpdated: (callback: () => void) => () => void;
-
   onPatientAdded: (callback: () => void) => () => void;
+
+  // Payment history functions
+  addPaymentHistory: (
+    payment: Omit<PaymentHistory, "payment_id" | "created_at">
+  ) => Promise<{ success: boolean; payment_id?: number; error?: string }>;
+  getPaymentHistory: (patientId: number) => Promise<{
+    success: boolean;
+    payments?: PaymentHistory[];
+    error?: string;
+  }>;
+  updateTreatmentRecordBalance: (
+    recordId: number,
+    newBalance: number
+  ) => Promise<{ success: boolean; error?: string }>;
+  onPaymentAdded: (callback: () => void) => () => void;
+  onTreatmentRecordUpdated: (callback: () => void) => () => void;
 }
 
 declare global {

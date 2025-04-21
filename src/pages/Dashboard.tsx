@@ -19,10 +19,10 @@ function Dashboard() {
         <TotalPatientCount />
       </div>
       <div className="chart-and-list-section flex gap-2 w-full flex-col md:flex-row">
-        <div className="w-[55rem]">
+        <div className="lg:col-span-2 w-full">
           <MonthlyPatientsChart />
         </div>
-        <div className="w-[27rem]">
+        <div className="w-full">
           <RecentPatientsList />
         </div>
       </div>

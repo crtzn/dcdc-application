@@ -220,7 +220,7 @@ const PatientList = () => {
                 </SelectContent>
               </Select>
               <Select value={genderFilter} onValueChange={setGenderFilter}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[190px]">
                   <SelectValue placeholder="Gender" />
                 </SelectTrigger>
                 <SelectContent>

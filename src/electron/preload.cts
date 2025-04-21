@@ -4,6 +4,7 @@ import {
   RegularPatient,
   RegularMedicalHistory,
   RegularTreatmentRecord,
+  PaymentHistory,
 } from "./types/RegularPatient.js";
 import {
   OrthodonticPatient,
@@ -75,5 +76,22 @@ electron.contextBridge.exposeInMainWorld("api", {
   onPatientUpdated: (callback: () => void) => {
     ipcRenderer.on("patient-updated", callback);
     return () => ipcRenderer.removeListener("patient-updated", callback);
+  },
+  // Payment history functions
+  addPaymentHistory: (
+    payment: Omit<PaymentHistory, "payment_id" | "created_at">
+  ) => ipcRenderer.invoke("add-payment-history", payment),
+  getPaymentHistory: (patientId: number) =>
+    ipcRenderer.invoke("get-payment-history", patientId),
+  updateTreatmentRecordBalance: (recordId: number, newBalance: number) =>
+    ipcRenderer.invoke("update-treatment-record-balance", recordId, newBalance),
+  onPaymentAdded: (callback: () => void) => {
+    ipcRenderer.on("payment-added", callback);
+    return () => ipcRenderer.removeListener("payment-added", callback);
+  },
+  onTreatmentRecordUpdated: (callback: () => void) => {
+    ipcRenderer.on("treatment-record-updated", callback);
+    return () =>
+      ipcRenderer.removeListener("treatment-record-updated", callback);
   },
 });
