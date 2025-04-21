@@ -1,12 +1,5 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, Users, Smile, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -87,64 +80,63 @@ export function TotalPatientCount() {
   }, []);
 
   return (
-    <Card className="flex shadow-md">
-      <CardHeader>
-        <CardTitle className="text-lg text-start font-semibold text-gray-800">
-          Patient Statistics
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex items-center justify-center w-[45rem]">
-        {loading ? (
-          <div className="flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-[#24336f]" />
-          </div>
-        ) : regularCount !== null && orthoCount !== null ? (
-          <div className="grid grid-cols-3 gap-4 w-full">
-            <div className="text-center pr-4 border-r border-gray-200">
-              <p className="text-sm font-medium text-gray-600">
+    <div className="container mx-auto py-6">
+      {loading ? (
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin text-[#24336f]" />
+        </div>
+      ) : regularCount !== null &&
+        orthoCount !== null &&
+        overallCount !== null ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Regular Patients Card */}
+          <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+            <CardHeader className="flex items-center space-x-2">
+              <Users className="h-6 w-6 text-[#24336f]" />
+              <CardTitle className="text-lg font-semibold text-gray-800">
                 Regular Patients
-              </p>
-              <p className="text-2xl font-bold text-[#24336f]">
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-3xl font-bold text-[#24336f]">
                 {regularCount}
               </p>
-            </div>
-            <div className="text-center pr-4 border-r border-gray-200">
-              <p className="text-sm font-medium text-gray-600">
+            </CardContent>
+          </Card>
+
+          {/* Orthodontic Patients Card */}
+          <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+            <CardHeader className="flex items-center space-x-2">
+              <Smile className="h-6 w-6 text-[#24336f]" />
+              <CardTitle className="text-lg font-semibold text-gray-800">
                 Orthodontic Patients
-              </p>
-              <p className="text-2xl font-bold text-[#24336f]">{orthoCount}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600">
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-3xl font-bold text-[#24336f]">{orthoCount}</p>
+            </CardContent>
+          </Card>
+
+          {/* Overall Patients Card */}
+          <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+            <CardHeader className="flex items-center space-x-2">
+              <UserPlus className="h-6 w-6 text-[#24336f]" />
+              <CardTitle className="text-lg font-semibold text-gray-800">
                 Overall Patients
-              </p>
-              <p className="text-2xl font-bold text-[#24336f]">
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-3xl font-bold text-[#24336f]">
                 {overallCount}
               </p>
-            </div>
-          </div>
-        ) : (
-          <p className="text-red-500 text-sm text-center">
-            Unable to load patient counts
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-export function TotalPatientToday() {
-  return (
-    <div>
-      <Card>
-        <CardContent>
-          <CardHeader>
-            <CardTitle>Total Patients Today</CardTitle>
-            <CardDescription>Card Description</CardDescription>
-          </CardHeader>
-          <CardFooter>Card Footer</CardFooter>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <p className="text-red-500 text-center text-lg">
+          Unable to load patient counts
+        </p>
+      )}
     </div>
   );
 }

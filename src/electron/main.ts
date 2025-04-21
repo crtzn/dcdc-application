@@ -19,6 +19,7 @@ import {
   updateOrthodonticPatient,
   updateMedicalHistory,
   updateRegularPatient,
+  getMonthlyPatientCounts,
 } from "./models/tstmgr.js";
 import {
   RegularPatient,
@@ -286,3 +287,12 @@ ipcMain.handle(
     }
   }
 );
+
+ipcMain.handle("get-monthly-patient-counts", async () => {
+  try {
+    return await getMonthlyPatientCounts();
+  } catch (error) {
+    console.error("IPC get-monthly-patient-counts error:", error);
+    return { success: false, error: String(error) };
+  }
+});

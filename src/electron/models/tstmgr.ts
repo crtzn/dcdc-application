@@ -795,3 +795,53 @@ export function updateMedicalHistory(
     return { success: false, error: errorMessage };
   }
 }
+
+// Get monthly patient counts
+export function getMonthlyPatientCounts(): {
+  success: boolean;
+  data?: Array<{ year: number; month: number; count: number }>;
+  error?: string;
+} {
+  try {
+    const query = `
+      SELECT 
+        strftime('%Y', created_at) as year,
+        strftime('%m', created_at) as month,
+        COUNT(*) as count
+      FROM (
+        SELECT created_at FROM regular_patients
+        UNION ALL
+        SELECT created_at FROM orthodontic_patients
+      )
+      GROUP BY year, month
+      ORDER BY year DESC, month DESC
+      LIMIT 12
+    `;
+    const stmt = db.prepare(query);
+    const results = stmt.all() as Array<{
+      year: string;
+      month: string;
+      count: number;
+    }>;
+
+    const data = results.map((row) => ({
+      year: parseInt(row.year),
+      month: parseInt(row.month),
+      count: row.count,
+    }));
+
+    console.log(`Fetched monthly patient counts: ${JSON.stringify(data)}`);
+
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error fetching monthly patient counts:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}

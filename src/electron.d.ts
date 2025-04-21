@@ -98,6 +98,11 @@ interface ElectronAPI {
     history_id: number,
     history: Partial<Omit<RegularMedicalHistory, "history_id" | "patient_id">>
   ) => Promise<{ success: boolean; error?: string }>;
+  getMonthlyPatientCounts: () => Promise<{
+    success: boolean;
+    data?: Array<{ year: number; month: number; count: number }>;
+    error?: string;
+  }>;
   onPatientUpdated: (callback: () => void) => () => void;
 
   onPatientAdded: (callback: () => void) => () => void;

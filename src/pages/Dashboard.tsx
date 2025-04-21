@@ -1,29 +1,32 @@
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// src/Dashboard.tsx
 
-import RecentAddPatientTable from "@/components/dashboard/patient-table";
 import { TotalPatientCount } from "@/components/dashboard/patient-count";
+import MonthlyPatientsChart from "@/components/dashboard/MonthlyPatientCharts";
+import RecentPatientsList from "@/components/dashboard/RecentPatientList";
 
 function Dashboard() {
   return (
-    <>
-      <div className="main-page flex flex-col p-8">
-        <div className="header-text">
-          <h1 className="text-start text-[#1e1e1e]">
-            Welcome to <span className="text-[#24336f]">D</span>
-            <span className="text-[#c84e67]">C</span>
-            <span className="text-[#24336f]">D</span>
-            <span className="text-[#c84e67]">C</span>
-          </h1>
+    <div className="main-page flex flex-col p-8">
+      <div className="header-text">
+        <h1 className="text-start text-[#1e1e1e]">
+          Welcome to <span className="text-[#24336f]">D</span>
+          <span className="text-[#c84e67]">C</span>
+          <span className="text-[#24336f]">D</span>
+          <span className="text-[#c84e67]">C</span>
+        </h1>
+      </div>
+      <div className="header-card flex items-center mt-5">
+        <TotalPatientCount />
+      </div>
+      <div className="chart-and-list-section flex gap-2 w-full flex-col md:flex-row">
+        <div className="w-[55rem]">
+          <MonthlyPatientsChart />
         </div>
-        <div className="header-card flex items-center mt-5">
-          <TotalPatientCount />
-        </div>
-        <div className="patient-table mt-10">
-          {/* Recent patients added here show */}
-          <RecentAddPatientTable />
+        <div className="w-[27rem]">
+          <RecentPatientsList />
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

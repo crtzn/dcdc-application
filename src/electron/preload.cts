@@ -70,6 +70,8 @@ electron.contextBridge.exposeInMainWorld("api", {
     history_id: number,
     history: Partial<Omit<RegularMedicalHistory, "history_id" | "patient_id">>
   ) => ipcRenderer.invoke("update-medical-history", history_id, history),
+  getMonthlyPatientCounts: () =>
+    ipcRenderer.invoke("get-monthly-patient-counts"),
   onPatientUpdated: (callback: () => void) => {
     ipcRenderer.on("patient-updated", callback);
     return () => ipcRenderer.removeListener("patient-updated", callback);
