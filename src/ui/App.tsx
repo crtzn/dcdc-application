@@ -8,7 +8,7 @@ function App() {
   return (
     <div className="flex">
       <Sidebar />
-      <main className="flex-1 ml-10 p-8">
+      <main className="flex-1 ml-10">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/patient-profile" element={<PatientProfile />} />

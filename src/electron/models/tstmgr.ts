@@ -187,10 +187,13 @@ export function addPatient(patient: Omit<RegularPatient, "patient_id">): {
   error?: string;
 } {
   try {
-    if (checkRegularPatientNameExists(patient.name)) {
+    // Trim the patient name to avoid whitespace issues
+    const trimmedName = patient.name.trim();
+
+    if (checkRegularPatientNameExists(trimmedName)) {
       return {
         success: false,
-        error: `A patient named "${patient.name}" already exists.`,
+        error: `A patient named "${trimmedName}" already exists.`,
       };
     }
     const stmt = db.prepare(`
@@ -199,7 +202,7 @@ export function addPatient(patient: Omit<RegularPatient, "patient_id">): {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = stmt.run(
-      patient.name,
+      trimmedName, // Use trimmed name
       patient.birthday,
       patient.religion || null,
       patient.home_address || null,
@@ -221,7 +224,9 @@ export function addPatient(patient: Omit<RegularPatient, "patient_id">): {
 
 export function checkRegularPatientNameExists(name: string): boolean {
   try {
-    const stmt = db.prepare("SELECT 1 FROM regular_patients WHERE name = ?");
+    const stmt = db.prepare(
+      "SELECT 1 FROM regular_patients WHERE LOWER(name) = LOWER(?)"
+    );
     return stmt.get(name) !== undefined; // Returns true if name exists
   } catch (error) {
     console.error("Error checking patient name:", error);
@@ -531,32 +536,41 @@ export function getFilteredPatients(
   error?: string;
 } {
   try {
-    let query = `
-      SELECT patient_id, name, 'Regular' as type, sex, age, created_at
-      FROM regular_patients
-      UNION ALL
-      SELECT patient_id, name, 'Ortho' as type, sex, age, created_at
-      FROM orthodontic_patients
-      WHERE 1=1
-    `;
+    // Build the query with proper filtering for both tables
+    let regularQuery = `SELECT patient_id, name, 'Regular' as type, sex, age, created_at FROM regular_patients WHERE 1=1`;
+    let orthoQuery = `SELECT patient_id, name, 'Ortho' as type, sex, age, created_at FROM orthodontic_patients WHERE 1=1`;
+
     const params: (string | number)[] = [];
+    const orthoParams: (string | number)[] = [];
 
     // Name filter
     if (searchName) {
-      query += ` AND name LIKE ?`;
+      regularQuery += ` AND name LIKE ?`;
+      orthoQuery += ` AND name LIKE ?`;
       params.push(`%${searchName}%`);
-    }
-
-    // Type filter
-    if (typeFilter !== "All") {
-      query += ` AND type = ?`;
-      params.push(typeFilter);
+      orthoParams.push(`%${searchName}%`);
     }
 
     // Gender filter
     if (genderFilter !== "All") {
-      query += ` AND sex = ?`;
+      regularQuery += ` AND sex = ?`;
+      orthoQuery += ` AND sex = ?`;
       params.push(genderFilter);
+      orthoParams.push(genderFilter);
+    }
+
+    // Type filter - if type is specified, only include that type in the final query
+    let finalQuery;
+    if (typeFilter === "Regular") {
+      finalQuery = regularQuery;
+    } else if (typeFilter === "Ortho") {
+      finalQuery = orthoQuery;
+      params.length = 0; // Clear regular params
+      params.push(...orthoParams); // Use ortho params instead
+    } else {
+      // If "All" types, combine both queries
+      finalQuery = `${regularQuery} UNION ALL ${orthoQuery}`;
+      params.push(...orthoParams); // Add ortho params to the end
     }
 
     // Sorting
@@ -565,9 +579,11 @@ export function getFilteredPatients(
       ? sortBy
       : "created_at";
     const direction = sortDirection === "ASC" ? "ASC" : "DESC";
-    query += ` ORDER BY ${sortColumn} ${direction}`;
+    finalQuery += ` ORDER BY ${sortColumn} ${direction}`;
 
-    const stmt = db.prepare(query);
+    console.log("Executing query:", finalQuery, "with params:", params);
+
+    const stmt = db.prepare(finalQuery);
     const results = stmt.all(...params) as Array<{
       patient_id: number;
       name: string;
@@ -804,7 +820,7 @@ export function getMonthlyPatientCounts(): {
 } {
   try {
     const query = `
-      SELECT 
+      SELECT
         strftime('%Y', created_at) as year,
         strftime('%m', created_at) as month,
         COUNT(*) as count
