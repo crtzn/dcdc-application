@@ -53,13 +53,22 @@ const RecentAddPatientTable = () => {
     fetchRecentPatients();
 
     // Listen for patient-added event
-    const unsubscribe = window.api.onPatientAdded(() => {
+    const unsubscribeAdded = window.api.onPatientAdded(() => {
       console.log("Patient added event received, refetching recent patients");
       fetchRecentPatients();
     });
 
-    // Cleanup listener on unmount
-    return () => unsubscribe();
+    // Listen for patient-deleted event
+    const unsubscribeDeleted = window.api.onPatientDeleted(() => {
+      console.log("Patient deleted event received, refetching recent patients");
+      fetchRecentPatients();
+    });
+
+    // Cleanup listeners on unmount
+    return () => {
+      unsubscribeAdded();
+      unsubscribeDeleted();
+    };
   }, []);
 
   return (

@@ -24,6 +24,8 @@ import {
   getPaymentHistory,
   updateTreatmentRecordBalance,
   getNextOrthoAppointmentNumber,
+  deleteRegularPatient,
+  deleteOrthodonticPatient,
 } from "./models/tstmgr.js";
 import {
   RegularPatient,
@@ -358,6 +360,42 @@ ipcMain.handle(
       return result;
     } catch (error) {
       console.error("IPC update-treatment-record-balance error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+// Delete patient handlers
+ipcMain.handle("delete-regular-patient", async (_event, patientId: number) => {
+  try {
+    const result = await deleteRegularPatient(patientId);
+    if (result.success) {
+      // Broadcast patient-deleted event to all renderer windows
+      BrowserWindow.getAllWindows().forEach((win) => {
+        win.webContents.send("patient-deleted");
+      });
+    }
+    return result;
+  } catch (error) {
+    console.error("IPC delete-regular-patient error:", error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle(
+  "delete-orthodontic-patient",
+  async (_event, patientId: number) => {
+    try {
+      const result = await deleteOrthodonticPatient(patientId);
+      if (result.success) {
+        // Broadcast patient-deleted event to all renderer windows
+        BrowserWindow.getAllWindows().forEach((win) => {
+          win.webContents.send("patient-deleted");
+        });
+      }
+      return result;
+    } catch (error) {
+      console.error("IPC delete-orthodontic-patient error:", error);
       return { success: false, error: String(error) };
     }
   }

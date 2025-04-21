@@ -36,6 +36,8 @@ import RegularPatientEditForm from "@/components/regular/patientEditForm";
 import OrthodonticPatientEditForm from "@/components/orthodontic/orthodonticPatientEditForm";
 import MedicalHistoryEditForm from "@/components/regular/medicalHistoryEditForm";
 import PaymentForm from "@/components/regular/payment-form";
+import ConfirmationDialog from "@/components/ui/confirmation-dialog";
+import { Trash2 } from "lucide-react";
 
 interface PatientDetailsModalProps {
   patient: {
@@ -62,10 +64,12 @@ const PatientDetailsModal = ({
   const [showMedicalHistoryEditForm, setShowMedicalHistoryEditForm] =
     useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [selectedMedicalHistory, setSelectedMedicalHistory] =
     useState<RegularMedicalHistory | null>(null);
   const [selectedTreatmentRecord, setSelectedTreatmentRecord] =
     useState<RegularTreatmentRecord | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!patient || !type) return null;
 
@@ -784,6 +788,41 @@ const PatientDetailsModal = ({
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       toast.error(`Error updating patient information: ${errorMessage}`);
+    }
+  };
+
+  const handleDeletePatient = async () => {
+    if (!patient || !type) return;
+
+    try {
+      setIsDeleting(true);
+      let result;
+
+      if (type === "Regular") {
+        result = await window.api.deleteRegularPatient(
+          patient.info.patient_id!
+        );
+      } else {
+        result = await window.api.deleteOrthodonticPatient(
+          patient.info.patient_id!
+        );
+      }
+
+      if (result.success) {
+        toast.success(`Patient ${patient.info.name} deleted successfully`);
+        onClose(); // Close the modal
+        // Don't call onRefresh() here as it would try to fetch the deleted patient
+        // The patient list will be refreshed by the onPatientDeleted event listener
+      } else {
+        throw new Error(result.error || "Failed to delete patient");
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      toast.error(`Error deleting patient: ${errorMessage}`);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirmation(false);
     }
   };
 
@@ -1626,25 +1665,46 @@ const PatientDetailsModal = ({
             </TabsContent>
           )}
         </Tabs>
-        <DialogFooter className="mt-6 flex justify-end gap-4">
+        <DialogFooter className="mt-6 flex justify-between gap-4">
           <Button
-            className="bg-[#24336f] text-white hover:bg-[#24336fd8]"
-            onClick={exportToPDF}
+            variant="destructive"
+            className="flex items-center gap-2"
+            onClick={() => setShowDeleteConfirmation(true)}
+            disabled={isDeleting}
           >
-            Export to PDF
+            <Trash2 size={16} />
+            Delete Patient
           </Button>
-          <Button
-            className="bg-[#c84e67] text-white hover:bg-[#c84e66e5]"
-            onClick={onClose}
-          >
-            Close
-          </Button>
+          <div className="flex gap-4">
+            <Button
+              className="bg-[#24336f] text-white hover:bg-[#24336fd8]"
+              onClick={exportToPDF}
+            >
+              Export to PDF
+            </Button>
+            <Button
+              className="bg-[#c84e67] text-white hover:bg-[#c84e66e5]"
+              onClick={onClose}
+            >
+              Close
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
       {renderTreatmentForm()}
       {renderEditForm()}
       {renderMedicalHistoryEditForm()}
       {renderPaymentForm()}
+      <ConfirmationDialog
+        isOpen={showDeleteConfirmation}
+        onClose={() => setShowDeleteConfirmation(false)}
+        onConfirm={handleDeletePatient}
+        title="Delete Patient"
+        description={`Are you sure you want to delete ${patient?.info.name}? This action cannot be undone and will delete all associated records including medical history, treatment records, and payment history.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+      />
     </Dialog>
   );
 };

@@ -49,12 +49,20 @@ const RecentPatientsList: React.FC = () => {
   useEffect(() => {
     fetchRecentPatients();
 
-    const unsubscribe = window.api.onPatientAdded(() => {
+    const unsubscribeAdded = window.api.onPatientAdded(() => {
       console.log("Patient added event received, refetching recent patients");
       fetchRecentPatients();
     });
 
-    return () => unsubscribe();
+    const unsubscribeDeleted = window.api.onPatientDeleted(() => {
+      console.log("Patient deleted event received, refetching recent patients");
+      fetchRecentPatients();
+    });
+
+    return () => {
+      unsubscribeAdded();
+      unsubscribeDeleted();
+    };
   }, []);
 
   if (loading) {

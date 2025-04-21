@@ -135,7 +135,7 @@ const PatientList = () => {
     fetchPatients();
   }, [typeFilter, genderFilter, sortBy, sortDirection, fetchPatients]);
 
-  // Set up event listeners for patient added/updated events
+  // Set up event listeners for patient added/updated/deleted events
   useEffect(() => {
     const unsubscribeAdded = window.api.onPatientAdded(() => {
       console.log("Patient added event received, refetching patients");
@@ -147,9 +147,15 @@ const PatientList = () => {
       fetchPatients();
     });
 
+    const unsubscribeDeleted = window.api.onPatientDeleted(() => {
+      console.log("Patient deleted event received, refetching patients");
+      fetchPatients();
+    });
+
     return () => {
       unsubscribeAdded();
       unsubscribeUpdated();
+      unsubscribeDeleted();
     };
   }, [fetchPatients]);
 

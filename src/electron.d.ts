@@ -128,6 +128,15 @@ interface ElectronAPI {
   ) => Promise<{ success: boolean; error?: string }>;
   onPaymentAdded: (callback: () => void) => () => void;
   onTreatmentRecordUpdated: (callback: () => void) => () => void;
+
+  // Delete patient functions
+  deleteRegularPatient: (
+    patientId: number
+  ) => Promise<{ success: boolean; error?: string }>;
+  deleteOrthodonticPatient: (
+    patientId: number
+  ) => Promise<{ success: boolean; error?: string }>;
+  onPatientDeleted: (callback: () => void) => () => void;
 }
 
 declare global {

@@ -71,12 +71,20 @@ export function TotalPatientCount() {
   useEffect(() => {
     fetchCounts();
 
-    const unsubscribe = window.api.onPatientAdded(() => {
+    const unsubscribeAdded = window.api.onPatientAdded(() => {
       console.log("Patient added event received, refetching counts");
       fetchCounts();
     });
 
-    return () => unsubscribe();
+    const unsubscribeDeleted = window.api.onPatientDeleted(() => {
+      console.log("Patient deleted event received, refetching counts");
+      fetchCounts();
+    });
+
+    return () => {
+      unsubscribeAdded();
+      unsubscribeDeleted();
+    };
   }, []);
 
   return (

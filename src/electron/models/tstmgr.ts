@@ -978,6 +978,120 @@ export function getNextOrthoAppointmentNumber(patientId: number): {
   }
 }
 
+// Delete a regular patient and all associated records
+export function deleteRegularPatient(patientId: number): {
+  success: boolean;
+  error?: string;
+} {
+  try {
+    // Start a transaction
+    db.prepare("BEGIN TRANSACTION").run();
+
+    try {
+      // Delete payment history records
+      const deletePaymentHistoryStmt = db.prepare(`
+        DELETE FROM payment_history
+        WHERE patient_id = ?
+      `);
+      deletePaymentHistoryStmt.run(patientId);
+
+      // Delete treatment records
+      const deleteTreatmentRecordsStmt = db.prepare(`
+        DELETE FROM regular_treatment_records
+        WHERE patient_id = ?
+      `);
+      deleteTreatmentRecordsStmt.run(patientId);
+
+      // Delete medical history
+      const deleteMedicalHistoryStmt = db.prepare(`
+        DELETE FROM regular_medical_history
+        WHERE patient_id = ?
+      `);
+      deleteMedicalHistoryStmt.run(patientId);
+
+      // Finally, delete the patient
+      const deletePatientStmt = db.prepare(`
+        DELETE FROM regular_patients
+        WHERE patient_id = ?
+      `);
+      const result = deletePatientStmt.run(patientId);
+
+      // Commit the transaction
+      db.prepare("COMMIT").run();
+
+      if (result.changes === 0) {
+        return { success: false, error: "Patient not found" };
+      }
+
+      console.log(
+        `Successfully deleted regular patient with ID ${patientId} and all associated records`
+      );
+      return { success: true };
+    } catch (error) {
+      // If any error occurs, roll back the transaction
+      db.prepare("ROLLBACK").run();
+      throw error;
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error deleting regular patient:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+// Delete an orthodontic patient and all associated records
+export function deleteOrthodonticPatient(patientId: number): {
+  success: boolean;
+  error?: string;
+} {
+  try {
+    // Start a transaction
+    db.prepare("BEGIN TRANSACTION").run();
+
+    try {
+      // Delete treatment records
+      const deleteTreatmentRecordsStmt = db.prepare(`
+        DELETE FROM orthodontic_treatment_records
+        WHERE patient_id = ?
+      `);
+      deleteTreatmentRecordsStmt.run(patientId);
+
+      // Finally, delete the patient
+      const deletePatientStmt = db.prepare(`
+        DELETE FROM orthodontic_patients
+        WHERE patient_id = ?
+      `);
+      const result = deletePatientStmt.run(patientId);
+
+      // Commit the transaction
+      db.prepare("COMMIT").run();
+
+      if (result.changes === 0) {
+        return { success: false, error: "Patient not found" };
+      }
+
+      console.log(
+        `Successfully deleted orthodontic patient with ID ${patientId} and all associated records`
+      );
+      return { success: true };
+    } catch (error) {
+      // If any error occurs, roll back the transaction
+      db.prepare("ROLLBACK").run();
+      throw error;
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error deleting orthodontic patient:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
 // Get monthly patient counts
 export function getMonthlyPatientCounts(): {
   success: boolean;

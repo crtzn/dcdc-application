@@ -96,4 +96,13 @@ electron.contextBridge.exposeInMainWorld("api", {
     return () =>
       ipcRenderer.removeListener("treatment-record-updated", callback);
   },
+  // Delete patient functions
+  deleteRegularPatient: (patientId: number) =>
+    ipcRenderer.invoke("delete-regular-patient", patientId),
+  deleteOrthodonticPatient: (patientId: number) =>
+    ipcRenderer.invoke("delete-orthodontic-patient", patientId),
+  onPatientDeleted: (callback: () => void) => {
+    ipcRenderer.on("patient-deleted", callback);
+    return () => ipcRenderer.removeListener("patient-deleted", callback);
+  },
 });
