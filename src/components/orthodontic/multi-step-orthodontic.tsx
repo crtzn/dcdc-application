@@ -130,11 +130,17 @@ const OrthodonticMultiStepForm: React.FC = () => {
 
       {/* Form Content */}
       <div className="rounded-lg">
-        {step === 1 && <OrthodonticPatientForm onNext={handleNext} />}
+        {step === 1 && (
+          <OrthodonticPatientForm
+            onNext={handleNext}
+            initialData={patientData}
+          />
+        )}
         {step === 2 && (
           <OrthodonticTreatmentRecordForm
             onSubmit={handleSubmit}
             onBack={handleBack}
+            defaultAppointmentNumber="1" // Set first appointment number to 1 for new patients
           />
         )}
       </div>

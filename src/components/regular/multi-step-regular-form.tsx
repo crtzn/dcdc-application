@@ -132,12 +132,16 @@ const MultiStepForm: React.FC = () => {
           {steps.find((s) => s.step === step)?.label}
         </h2>
         {step === 1 && (
-          <RegularPatientForm onNext={(data) => handleNext(data, "patient")} />
+          <RegularPatientForm
+            onNext={(data) => handleNext(data, "patient")}
+            initialData={patientData}
+          />
         )}
         {step === 2 && (
           <MedicalHistoryForm
             onNext={(data) => handleNext(data, "medicalHistory")}
             onBack={handleBack}
+            initialData={medicalHistoryData}
           />
         )}
         {step === 3 && (

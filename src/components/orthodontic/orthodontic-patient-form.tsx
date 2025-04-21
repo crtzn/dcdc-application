@@ -70,41 +70,62 @@ type PatientFormValues = z.infer<typeof patientSchema>;
 
 interface OrthodonticPatientFormProps {
   onNext: (data: PatientFormValues) => void;
+  initialData?: Partial<PatientFormValues>;
 }
 
 const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
   onNext,
+  initialData = {},
 }) => {
   const RequiredIndicator = () => <span className="text-red-500 ml-1">*</span>;
   const [nameError, setNameError] = useState<string | null>(null);
   const [isCheckingName, setIsCheckingName] = useState(false);
   const [nameExists, setNameExists] = useState(false);
-  const [date, setDate] = useState<Date>();
+  const [date, setDate] = useState<Date | undefined>(
+    initialData.birthday ? new Date(initialData.birthday) : undefined
+  );
+
+  // Create a date at noon to avoid timezone issues
+  const today = new Date();
+  const normalizedToday = new Date(
+    Date.UTC(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      12,
+      0,
+      0,
+      0
+    )
+  );
+  const currentDate = normalizedToday.toISOString().split("T")[0];
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
-      date_of_exam: new Date().toISOString().split("T")[0],
-      name: "",
-      occupation: "",
-      birthday: "",
-      parent_guardian_name: "",
-      address: "",
-      telephone_home: "",
-      telephone_business: "",
-      cellphone_number: "",
-      email: "",
-      chart: "",
-      sex: undefined,
-      age: undefined,
-      chief_complaint: "",
-      past_medical_dental_history: "",
-      prior_orthodontic_history: "",
-      under_treatment_or_medication: "No",
-      congenital_abnormalities: "No",
-      tmj_problems: "No",
-      oral_hygiene: undefined,
-      gingival_tissues: undefined,
+      date_of_exam: initialData.date_of_exam || currentDate,
+      name: initialData.name || "",
+      occupation: initialData.occupation || "",
+      birthday: initialData.birthday || "",
+      parent_guardian_name: initialData.parent_guardian_name || "",
+      address: initialData.address || "",
+      telephone_home: initialData.telephone_home || "",
+      telephone_business: initialData.telephone_business || "",
+      cellphone_number: initialData.cellphone_number || "",
+      email: initialData.email || "",
+      chart: initialData.chart || "",
+      sex: initialData.sex || undefined,
+      age: initialData.age || undefined,
+      chief_complaint: initialData.chief_complaint || "",
+      past_medical_dental_history:
+        initialData.past_medical_dental_history || "",
+      prior_orthodontic_history: initialData.prior_orthodontic_history || "",
+      under_treatment_or_medication:
+        initialData.under_treatment_or_medication || "No",
+      congenital_abnormalities: initialData.congenital_abnormalities || "No",
+      tmj_problems: initialData.tmj_problems || "No",
+      oral_hygiene: initialData.oral_hygiene || undefined,
+      gingival_tissues: initialData.gingival_tissues || undefined,
     },
   });
 
@@ -188,13 +209,97 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
                     Date of Exam <RequiredIndicator />
                   </FormLabel>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      className="border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 text-xs sm:text-sm h-8 sm:h-9"
-                      {...field}
-                    />
-                  </FormControl>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal h-8 sm:h-9 border-gray-300 rounded-md text-xs sm:text-sm",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(new Date(field.value), "MM/dd/yyyy")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarDays className="ml-auto h-4 w-4 text-black" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-auto p-0 bg-white shadow-lg rounded-md"
+                      align="start"
+                      side="bottom"
+                      avoidCollisions
+                    >
+                      <Calendar
+                        mode="single"
+                        selected={
+                          field.value ? new Date(field.value) : undefined
+                        }
+                        onSelect={(selectedDate) => {
+                          if (selectedDate) {
+                            // Create a date at noon to avoid timezone issues
+                            const normalizedDate = new Date(
+                              Date.UTC(
+                                selectedDate.getFullYear(),
+                                selectedDate.getMonth(),
+                                selectedDate.getDate(),
+                                12,
+                                0,
+                                0,
+                                0
+                              )
+                            );
+                            // Format the date as YYYY-MM-DD for the form field
+                            field.onChange(
+                              normalizedDate.toISOString().split("T")[0]
+                            );
+                          }
+                        }}
+                        disabled={(date) =>
+                          date > new Date() || date < new Date("1900-01-01")
+                        }
+                        initialFocus
+                        captionLayout="dropdown-buttons"
+                        fromYear={1900}
+                        toYear={new Date().getFullYear()}
+                        className="p-3 rounded-md border border-gray-200"
+                        classNames={{
+                          months:
+                            "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                          month: "space-y-4",
+                          caption:
+                            "flex justify-center pt-1 relative items-center",
+                          caption_label: "text-sm font-medium hidden",
+                          caption_dropdowns: "flex justify-center space-x-2",
+                          dropdown_month: "relative",
+                          dropdown_year: "relative",
+                          dropdown:
+                            "border border-gray-300 rounded-md bg-white text-sm p-1 focus:ring-2 focus:ring-blue-500",
+                          nav: "flex items-center",
+                          nav_button: "hidden",
+                          nav_button_previous: "hidden",
+                          nav_button_next: "hidden",
+                          table: "w-full border-collapse space-y-1",
+                          head_row: "flex w-full mb-2",
+                          head_cell:
+                            "text-gray-600 w-10 h-10 flex items-center justify-center font-normal text-sm",
+                          row: "flex w-full space-x-1",
+                          cell: "w-10 h-10 flex items-center justify-center",
+                          day: "w-10 h-10 flex items-center justify-center font-normal text-sm rounded-md hover:bg-gray-200 focus:bg-gray-200 focus:outline-none cursor-pointer",
+                          day_selected:
+                            "bg-blue-600 text-white rounded-md font-medium",
+                          day_today:
+                            "border border-blue-500 text-blue-600 rounded-md",
+                          day_disabled:
+                            "text-gray-400 opacity-50 cursor-not-allowed",
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage className="text-red-500 text-xs" />
                 </FormItem>
               )}
@@ -272,7 +377,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
                           ) : (
                             <span>Pick a date</span>
                           )}
-                          <CalendarDays className="ml-auto h-4 w-4 opacity-50" />
+                          <CalendarDays className="ml-auto h-4 w-4 text-black" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>

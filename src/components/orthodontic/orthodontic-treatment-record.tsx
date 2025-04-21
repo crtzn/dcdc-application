@@ -1,5 +1,5 @@
 // src/components/orthodontic/orthodontic-treatment-record.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -30,6 +30,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Separator } from "@/components/ui/separator";
 import { OrthodonticTreatmentRecord } from "@/electron/types/OrthodonticPatient";
+import { CalendarDays } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 const treatmentSchema = z.object({
   appt_no: z.string().min(1, "Appointment number is required"),
@@ -49,15 +58,25 @@ type TreatmentFormValues = Omit<
 interface OrthodonticTreatmentRecordFormProps {
   onSubmit: (data: TreatmentFormValues) => void;
   onBack: () => void;
+  patientId?: number; // Optional patient ID for existing patients
+  defaultAppointmentNumber?: string; // Optional default appointment number
 }
 
 const OrthodonticTreatmentRecordForm: React.FC<
   OrthodonticTreatmentRecordFormProps
-> = ({ onSubmit, onBack }) => {
+> = ({ onSubmit, onBack, patientId, defaultAppointmentNumber }) => {
+  const [loading, setLoading] = useState(false);
+  const [treatmentDate, setTreatmentDate] = useState<Date | undefined>(
+    new Date()
+  );
+  const [nextScheduleDate, setNextScheduleDate] = useState<Date | undefined>(
+    undefined
+  );
+
   const form = useForm<TreatmentFormValues>({
     resolver: zodResolver(treatmentSchema),
     defaultValues: {
-      appt_no: "",
+      appt_no: defaultAppointmentNumber || "",
       date: new Date().toISOString().split("T")[0],
       arch_wire: "",
       procedure: "",
@@ -66,6 +85,29 @@ const OrthodonticTreatmentRecordForm: React.FC<
       mode_of_payment: "Cash", // Default to Cash as per user preference for boolean fields
     },
   });
+
+  // Fetch the next appointment number when the component mounts if patientId is provided
+  useEffect(() => {
+    const fetchNextAppointmentNumber = async () => {
+      if (patientId && !defaultAppointmentNumber) {
+        setLoading(true);
+        try {
+          const result = await window.api.getNextOrthoAppointmentNumber(
+            patientId
+          );
+          if (result.success && result.next_appt_no) {
+            form.setValue("appt_no", result.next_appt_no.toString());
+          }
+        } catch (error) {
+          console.error("Error fetching next appointment number:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchNextAppointmentNumber();
+  }, [patientId, defaultAppointmentNumber, form]);
 
   const handleSubmit = (data: TreatmentFormValues) => {
     console.log("Form submitted with data:", data); // Add logging
@@ -99,11 +141,20 @@ const OrthodonticTreatmentRecordForm: React.FC<
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Enter appointment number"
-                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
+                          placeholder={
+                            loading ? "Loading..." : "Enter appointment number"
+                          }
+                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10 bg-gray-100"
+                          disabled={true}
                           {...field}
                         />
                       </FormControl>
+                      {patientId !== undefined && (
+                        <FormDescription className="text-xs text-gray-500">
+                          Appointment number is automatically assigned and
+                          cannot be edited
+                        </FormDescription>
+                      )}
                       <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
                   )}
@@ -116,13 +167,48 @@ const OrthodonticTreatmentRecordForm: React.FC<
                       <FormLabel className="text-gray-700 font-medium">
                         Treatment Date <span className="text-red-500">*</span>
                       </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
-                          {...field}
-                        />
-                      </FormControl>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal h-10 border-gray-300 rounded-md",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(new Date(field.value), "MM/dd/yyyy")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarDays className="ml-auto h-4 w-4 text-black" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-auto p-0 bg-white shadow-lg rounded-md"
+                          align="start"
+                          side="bottom"
+                          avoidCollisions
+                        >
+                          <Calendar
+                            mode="single"
+                            selected={treatmentDate}
+                            onSelect={(date) => {
+                              if (date) {
+                                setTreatmentDate(date);
+                                field.onChange(
+                                  date.toISOString().split("T")[0]
+                                );
+                              }
+                            }}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date("1900-01-01")
+                            }
+                          />
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
                   )}
@@ -209,13 +295,46 @@ const OrthodonticTreatmentRecordForm: React.FC<
                       <FormLabel className="text-gray-700 font-medium">
                         Next Schedule
                       </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
-                          {...field}
-                        />
-                      </FormControl>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal h-10 border-gray-300 rounded-md",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(new Date(field.value), "MM/dd/yyyy")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarDays className="ml-auto h-4 w-4 text-black" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-auto p-0 bg-white shadow-lg rounded-md"
+                          align="start"
+                          side="bottom"
+                          avoidCollisions
+                        >
+                          <Calendar
+                            mode="single"
+                            selected={nextScheduleDate}
+                            onSelect={(date) => {
+                              if (date) {
+                                setNextScheduleDate(date);
+                                field.onChange(
+                                  date.toISOString().split("T")[0]
+                                );
+                              }
+                            }}
+                            disabled={(date) => date < new Date("1900-01-01")}
+                          />
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage className="text-red-500 text-xs" />
                       <FormDescription className="text-xs text-gray-500">
                         Select the date for the next appointment

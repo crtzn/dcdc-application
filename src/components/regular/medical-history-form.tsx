@@ -98,34 +98,37 @@ const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 interface MedicalHistoryFormProps {
   onNext: (data: MedicalFormValues) => void;
   onBack: () => void;
+  initialData?: Partial<MedicalFormValues>;
 }
 
 const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
   onNext,
   onBack,
+  initialData = {},
 }) => {
   const [otherAllergy, setOtherAllergy] = useState("");
   const form = useForm<MedicalFormValues>({
     resolver: zodResolver(medicalSchema),
     defaultValues: {
-      general_health: "",
-      under_medical_treatment: false,
-      medical_condition: "",
-      serious_illness_or_surgery: false,
-      illness_or_surgery_details: "",
-      hospitalized: false,
-      hospitalization_details: "",
-      taking_medications: false,
-      medications_list: "",
-      uses_tobacco: false,
-      list_of_allergies: "",
-      bleeding_time: "",
-      is_pregnant: false,
-      is_nursing: false,
-      taking_birth_control: false,
-      blood_type: "",
-      blood_pressure: "",
-      selected_conditions: "",
+      general_health: initialData.general_health || "",
+      under_medical_treatment: initialData.under_medical_treatment || false,
+      medical_condition: initialData.medical_condition || "",
+      serious_illness_or_surgery:
+        initialData.serious_illness_or_surgery || false,
+      illness_or_surgery_details: initialData.illness_or_surgery_details || "",
+      hospitalized: initialData.hospitalized || false,
+      hospitalization_details: initialData.hospitalization_details || "",
+      taking_medications: initialData.taking_medications || false,
+      medications_list: initialData.medications_list || "",
+      uses_tobacco: initialData.uses_tobacco || false,
+      list_of_allergies: initialData.list_of_allergies || "",
+      bleeding_time: initialData.bleeding_time || "",
+      is_pregnant: initialData.is_pregnant || false,
+      is_nursing: initialData.is_nursing || false,
+      taking_birth_control: initialData.taking_birth_control || false,
+      blood_type: initialData.blood_type || "",
+      blood_pressure: initialData.blood_pressure || "",
+      selected_conditions: initialData.selected_conditions || "",
     },
   });
 

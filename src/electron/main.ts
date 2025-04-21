@@ -23,11 +23,13 @@ import {
   addPaymentHistory,
   getPaymentHistory,
   updateTreatmentRecordBalance,
+  getNextOrthoAppointmentNumber,
 } from "./models/tstmgr.js";
 import {
   RegularPatient,
   RegularMedicalHistory,
   RegularTreatmentRecord,
+  PaymentHistory,
 } from "./types/RegularPatient.js";
 import {
   OrthodonticPatient,
@@ -299,6 +301,18 @@ ipcMain.handle("get-monthly-patient-counts", async () => {
     return { success: false, error: String(error) };
   }
 });
+
+ipcMain.handle(
+  "get-next-ortho-appointment-number",
+  async (_event, patientId: number) => {
+    try {
+      return await getNextOrthoAppointmentNumber(patientId);
+    } catch (error) {
+      console.error("IPC get-next-ortho-appointment-number error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
 
 // Payment history handlers
 ipcMain.handle(

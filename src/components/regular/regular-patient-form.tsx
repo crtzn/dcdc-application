@@ -62,27 +62,48 @@ const RELIGIONS = [
 
 interface RegularPatientFormProps {
   onNext: (data: PatientFormValues) => void;
+  initialData?: Partial<PatientFormValues>;
 }
 
-const RegularPatientForm: React.FC<RegularPatientFormProps> = ({ onNext }) => {
+const RegularPatientForm: React.FC<RegularPatientFormProps> = ({
+  onNext,
+  initialData = {},
+}) => {
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const [isCheckingName, setIsCheckingName] = useState(false);
   const [nameExists, setNameExists] = useState(false);
-  const [date, setDate] = useState<Date>();
+  const [date, setDate] = useState<Date | undefined>(
+    initialData.birthday ? new Date(initialData.birthday) : undefined
+  );
+
+  // Create a date at noon to avoid timezone issues
+  const today = new Date();
+  const normalizedToday = new Date(
+    Date.UTC(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      12,
+      0,
+      0,
+      0
+    )
+  );
+  const currentDate = normalizedToday.toISOString().split("T")[0];
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
-      name: "",
-      birthday: "",
-      religion: "",
-      home_address: "",
-      sex: "",
-      age: 0,
-      nationality: "",
-      cellphone_number: "",
-      registration_date: new Date().toISOString().split("T")[0],
+      name: initialData.name || "",
+      birthday: initialData.birthday || "",
+      religion: initialData.religion || "",
+      home_address: initialData.home_address || "",
+      sex: initialData.sex || "",
+      age: initialData.age || 0,
+      nationality: initialData.nationality || "",
+      cellphone_number: initialData.cellphone_number || "",
+      registration_date: initialData.registration_date || currentDate,
     },
   });
 
@@ -224,7 +245,7 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({ onNext }) => {
                             ) : (
                               <span>Pick a date</span>
                             )}
-                            <CalendarDays className="ml-auto h-4 w-4 opacity-50" />
+                            <CalendarDays className="ml-auto h-4 w-4 text-black" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -466,12 +487,19 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({ onNext }) => {
                       Registration Date <RequiredIndicator />
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type="date"
-                        className="border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 text-sm"
-                        {...field}
-                        disabled
-                      />
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          className="border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 text-sm pr-10"
+                          value={
+                            field.value
+                              ? format(new Date(field.value), "MM/dd/yyyy")
+                              : ""
+                          }
+                          disabled
+                        />
+                        <CalendarDays className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-black" />
+                      </div>
                     </FormControl>
                     <FormMessage className="text-red-500 text-xs" />
                   </FormItem>

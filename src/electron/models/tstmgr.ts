@@ -940,6 +940,44 @@ export function updateMedicalHistory(
   }
 }
 
+// Get next appointment number for an orthodontic patient
+export function getNextOrthoAppointmentNumber(patientId: number): {
+  success: boolean;
+  next_appt_no?: number;
+  error?: string;
+} {
+  try {
+    const stmt = db.prepare(`
+      SELECT appt_no
+      FROM orthodontic_treatment_records
+      WHERE patient_id = ?
+      ORDER BY CAST(appt_no AS INTEGER) DESC
+      LIMIT 1
+    `);
+
+    const result = stmt.get(patientId) as { appt_no: string } | undefined;
+
+    // If no previous appointments, start with 1, otherwise increment by 1
+    const nextApptNo = result ? parseInt(result.appt_no) + 1 : 1;
+
+    console.log(
+      `Next appointment number for patient ${patientId}: ${nextApptNo}`
+    );
+
+    return {
+      success: true,
+      next_appt_no: nextApptNo,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error getting next appointment number:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
 // Get monthly patient counts
 export function getMonthlyPatientCounts(): {
   success: boolean;

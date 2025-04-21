@@ -1397,6 +1397,7 @@ const PatientDetailsModal = ({
             <OrthodonticTreatmentRecordForm
               onSubmit={handleTreatmentSubmit}
               onBack={() => setShowTreatmentForm(false)}
+              patientId={patient.info.patient_id}
             />
           )}
         </DialogContent>
