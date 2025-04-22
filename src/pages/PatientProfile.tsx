@@ -211,12 +211,12 @@ const PatientList = () => {
                 placeholder="Search patients..."
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
-                className="pl-8 max-w-xs"
+                className="pl-8 max-w-xs bg-white"
               />
             </div>
             <div className="flex gap-2">
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[140px] bg-white">
                   <SelectValue placeholder="Patient Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -226,7 +226,7 @@ const PatientList = () => {
                 </SelectContent>
               </Select>
               <Select value={genderFilter} onValueChange={setGenderFilter}>
-                <SelectTrigger className="w-[190px]">
+                <SelectTrigger className="w-[190px] bg-white">
                   <SelectValue placeholder="Gender" />
                 </SelectTrigger>
                 <SelectContent>

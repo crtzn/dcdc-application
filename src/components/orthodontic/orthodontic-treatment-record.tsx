@@ -43,11 +43,21 @@ import { cn } from "@/lib/utils";
 const treatmentSchema = z.object({
   appt_no: z.string().min(1, "Appointment number is required"),
   date: z.string().min(1, "Date is required"),
-  arch_wire: z.string().optional(),
+  arch_wire: z.string().min(1, "Arch wire is required"),
   procedure: z.string().optional(),
-  amount_paid: z.number().min(0, "Amount paid must be positive").optional(),
+  contract_price: z
+    .number()
+    .min(0, "Contract price must be positive")
+    .optional(),
+  contract_months: z
+    .number()
+    .min(1, "Contract months must be at least 1")
+    .optional(),
+  amount_paid: z.number().min(0, "Amount paid must be positive"),
   next_schedule: z.string().optional(),
   mode_of_payment: z.string().optional(),
+  treatment_cycle: z.number().optional(),
+  balance: z.number().optional(),
 });
 
 type TreatmentFormValues = Omit<
@@ -78,35 +88,76 @@ const OrthodonticTreatmentRecordForm: React.FC<
     defaultValues: {
       appt_no: defaultAppointmentNumber || "",
       date: new Date().toISOString().split("T")[0],
-      arch_wire: "",
+      arch_wire: "", // Required field
       procedure: "",
-      amount_paid: undefined,
+      contract_price: undefined,
+      contract_months: undefined,
+      amount_paid: 0, // Required field with default value of 0
       next_schedule: "",
       mode_of_payment: "Cash", // Default to Cash as per user preference for boolean fields
+      treatment_cycle: 1,
     },
   });
 
-  // Fetch the next appointment number when the component mounts if patientId is provided
+  // Fetch the next appointment number and patient details when the component mounts
   useEffect(() => {
-    const fetchNextAppointmentNumber = async () => {
-      if (patientId && !defaultAppointmentNumber) {
+    const fetchData = async () => {
+      if (patientId) {
         setLoading(true);
         try {
-          const result = await window.api.getNextOrthoAppointmentNumber(
-            patientId
+          // Get patient details to check treatment cycle
+          const patientDetails = await window.api.getPatientDetails(
+            patientId,
+            "Ortho"
           );
-          if (result.success && result.next_appt_no) {
-            form.setValue("appt_no", result.next_appt_no.toString());
+
+          if (patientDetails.success && patientDetails.patient) {
+            const patient = patientDetails.patient.info;
+
+            // Set treatment cycle
+            if (patient.treatment_cycle) {
+              form.setValue("treatment_cycle", patient.treatment_cycle);
+            }
+
+            // If this is the first appointment of a cycle, pre-fill contract details
+            if (!defaultAppointmentNumber) {
+              // Get next appointment number for this treatment cycle
+              const result = await window.api.getNextOrthoAppointmentNumber(
+                patientId,
+                patient.treatment_cycle
+              );
+
+              if (result.success && result.next_appt_no) {
+                form.setValue("appt_no", result.next_appt_no.toString());
+
+                // If this is the first appointment of the cycle, pre-fill contract details
+                if (result.next_appt_no === 1) {
+                  // Pre-fill with current contract details if available
+                  if (patient.current_contract_price) {
+                    form.setValue(
+                      "contract_price",
+                      patient.current_contract_price
+                    );
+                  }
+                  if (patient.current_contract_months) {
+                    form.setValue(
+                      "contract_months",
+                      patient.current_contract_months
+                    );
+                  }
+                }
+              }
+            }
           }
         } catch (error) {
-          console.error("Error fetching next appointment number:", error);
+          console.error("Error fetching data:", error);
         } finally {
           setLoading(false);
         }
       }
     };
 
-    fetchNextAppointmentNumber();
+    fetchData();
   }, [patientId, defaultAppointmentNumber, form]);
 
   const handleSubmit = (data: TreatmentFormValues) => {
@@ -219,7 +270,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                   render={({ field }) => (
                     <FormItem className="flex flex-col space-y-1.5">
                       <FormLabel className="text-gray-700 font-medium">
-                        Arch Wire
+                        Arch Wire <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -256,6 +307,74 @@ const OrthodonticTreatmentRecordForm: React.FC<
 
             <Separator className="my-2" />
 
+            {/* Contract Information - Only show for first appointment */}
+            {form.watch("appt_no") === "1" && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-gray-800 mb-4 border-b pb-2">
+                  Contract Information
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <FormField
+                    control={form.control}
+                    name="contract_price"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col space-y-1.5">
+                        <FormLabel className="text-gray-700 font-medium">
+                          Contract Price <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="Enter contract price"
+                            className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(
+                                parseFloat(e.target.value) || undefined
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs text-gray-500">
+                          Total price for the entire treatment plan
+                        </FormDescription>
+                        <FormMessage className="text-red-500 text-xs" />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="contract_months"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col space-y-1.5">
+                        <FormLabel className="text-gray-700 font-medium">
+                          Contract Duration (Months){" "}
+                          <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="Enter duration in months"
+                            className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(
+                                parseInt(e.target.value) || undefined
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs text-gray-500">
+                          Expected duration of the treatment in months
+                        </FormDescription>
+                        <FormMessage className="text-red-500 text-xs" />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Payment Information */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="text-lg font-medium text-gray-800 mb-4 border-b pb-2">
@@ -268,7 +387,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                   render={({ field }) => (
                     <FormItem className="flex flex-col space-y-1.5">
                       <FormLabel className="text-gray-700 font-medium">
-                        Amount Paid
+                        Amount Paid <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input

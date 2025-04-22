@@ -827,13 +827,13 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
               type="button"
               variant="outline"
               onClick={onBack}
-              className="border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md"
+              className="border-gray-300 text-white bg-[#1e1e1e] hover:bg-[#1e1e1ee9] hover:text-white rounded-md"
             >
               Back
             </Button>
             <Button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+              className="bg-[#1e1e1e] text-white  hover:bg-[#1e1e1ee8] hover:text-white text-white rounded-md"
             >
               Next
             </Button>

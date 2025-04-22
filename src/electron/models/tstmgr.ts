@@ -121,6 +121,11 @@ function initializeDatabase() {
         temporomandibular_joint_problems BOOLEAN DEFAULT 0,
         oral_hygiene TEXT,
         gingival_tissues TEXT,
+        treatment_status TEXT DEFAULT 'Not Started',
+        current_contract_price REAL,
+        current_contract_months INTEGER,
+        current_balance REAL,
+        treatment_cycle INTEGER DEFAULT 1,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -130,10 +135,13 @@ function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS orthodontic_treatment_records (
         record_id INTEGER PRIMARY KEY AUTOINCREMENT,
         patient_id INTEGER NOT NULL,
+        treatment_cycle INTEGER DEFAULT 1,
         appt_no TEXT,
         date TEXT,
         arch_wire TEXT,
         procedure TEXT,
+        contract_price REAL,
+        contract_months INTEGER,
         amount_paid REAL,
         next_schedule TEXT,
         mode_of_payment TEXT,
@@ -147,14 +155,13 @@ function initializeDatabase() {
         payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
         patient_id INTEGER NOT NULL,
         treatment_record_id INTEGER,
+        patient_type TEXT NOT NULL,
         payment_date TEXT NOT NULL,
         amount_paid REAL NOT NULL,
         payment_method TEXT NOT NULL,
         remaining_balance REAL NOT NULL,
         notes TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (patient_id) REFERENCES regular_patients(patient_id),
-        FOREIGN KEY (treatment_record_id) REFERENCES regular_treatment_records(record_id)
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -349,8 +356,9 @@ export function addOrthodonticPatient(
         telephone_home, telephone_business, cellphone_number, email, chart, sex, age,
         chief_complaint, past_medical_dental_history, prior_orthodontic_history,
         under_treatment_or_medication, congenital_abnormalities, temporomandibular_joint_problems,
-        oral_hygiene, gingival_tissues
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        oral_hygiene, gingival_tissues, treatment_status, current_contract_price,
+        current_contract_months, current_balance, treatment_cycle
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = stmt.run(
       patient.date_of_exam || null,
@@ -373,7 +381,12 @@ export function addOrthodonticPatient(
       patient.congenital_abnormalities ? 1 : 0,
       patient.tmj_problems ? 1 : 0,
       patient.oral_hygiene || null,
-      patient.gingival_tissues || null
+      patient.gingival_tissues || null,
+      patient.treatment_status || "Not Started",
+      patient.current_contract_price || null,
+      patient.current_contract_months || null,
+      patient.current_balance || null,
+      patient.treatment_cycle || 1
     );
     return { success: true, patient_id: Number(result.lastInsertRowid) };
   } catch (error) {
@@ -390,22 +403,160 @@ export function addOrthodonticTreatmentRecord(
   error?: string; // Added for better error reporting
 } {
   try {
-    const stmt = db.prepare(`
-      INSERT INTO orthodontic_treatment_records (
-        patient_id, appt_no, date, arch_wire, procedure, amount_paid, mode_of_payment, next_schedule
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(
-      record.patient_id,
-      record.appt_no || null,
-      record.date || null,
-      record.arch_wire || null,
-      record.procedure || null,
-      record.amount_paid || null,
-      record.mode_of_payment || null,
-      record.next_schedule || null
-    );
-    return { success: true };
+    // Begin transaction
+    db.prepare("BEGIN TRANSACTION").run();
+
+    try {
+      // Insert the treatment record
+      const stmt = db.prepare(`
+        INSERT INTO orthodontic_treatment_records (
+          patient_id, treatment_cycle, appt_no, date, arch_wire, procedure,
+          contract_price, contract_months, amount_paid, mode_of_payment, next_schedule, balance
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      // Calculate balance for this record
+      let balance = 0;
+
+      // If this is the first appointment with contract details, set initial balance
+      if (record.appt_no === "1" && record.contract_price) {
+        balance = record.contract_price - (record.amount_paid || 0);
+      } else {
+        // For subsequent appointments, get current balance from patient record
+        const getBalanceStmt = db.prepare(`
+          SELECT current_balance FROM orthodontic_patients
+          WHERE patient_id = ?
+        `);
+
+        const balanceResult = getBalanceStmt.get(record.patient_id) as
+          | { current_balance: number }
+          | undefined;
+
+        if (
+          balanceResult &&
+          balanceResult.current_balance !== null &&
+          balanceResult.current_balance !== undefined
+        ) {
+          balance = Math.max(
+            0,
+            balanceResult.current_balance - (record.amount_paid || 0)
+          );
+        }
+      }
+
+      stmt.run(
+        record.patient_id,
+        record.treatment_cycle || 1,
+        record.appt_no || null,
+        record.date || null,
+        record.arch_wire || null,
+        record.procedure || null,
+        record.contract_price || null,
+        record.contract_months || null,
+        record.amount_paid || null,
+        record.mode_of_payment || null,
+        record.next_schedule || null,
+        balance
+      );
+
+      // Check if this is the first appointment (appt_no = 1) and has contract details
+      if (record.appt_no === "1" && record.contract_price) {
+        // Update the patient's treatment status and contract details
+        const updatePatientStmt = db.prepare(`
+          UPDATE orthodontic_patients
+          SET treatment_status = 'In Progress',
+              current_contract_price = ?,
+              current_contract_months = ?,
+              current_balance = ?
+          WHERE patient_id = ?
+        `);
+
+        // Calculate initial balance
+        const initialBalance =
+          record.contract_price - (record.amount_paid || 0);
+
+        updatePatientStmt.run(
+          record.contract_price,
+          record.contract_months || null,
+          initialBalance,
+          record.patient_id
+        );
+      } else {
+        // For subsequent appointments
+        const getPatientStmt = db.prepare(`
+          SELECT current_balance, current_contract_months, treatment_cycle
+          FROM orthodontic_patients
+          WHERE patient_id = ?
+        `);
+
+        const patientData = getPatientStmt.get(record.patient_id) as
+          | {
+              current_balance: number;
+              current_contract_months: number;
+              treatment_cycle: number;
+            }
+          | undefined;
+
+        // Update balance if payment was made
+        if (
+          record.amount_paid &&
+          patientData &&
+          patientData.current_balance !== null &&
+          patientData.current_balance !== undefined
+        ) {
+          const newBalance = Math.max(
+            0,
+            patientData.current_balance - record.amount_paid
+          );
+
+          const updateBalanceStmt = db.prepare(`
+            UPDATE orthodontic_patients
+            SET current_balance = ?
+            WHERE patient_id = ?
+          `);
+
+          updateBalanceStmt.run(newBalance, record.patient_id);
+        }
+
+        // Check if this appointment completes the treatment
+        // (when appointment number equals contract months)
+        if (patientData && patientData.current_contract_months) {
+          // Count the number of appointments in this treatment cycle
+          const countApptsStmt = db.prepare(`
+            SELECT COUNT(*) as count FROM orthodontic_treatment_records
+            WHERE patient_id = ? AND treatment_cycle = ?
+          `);
+
+          const apptCount = countApptsStmt.get(
+            record.patient_id,
+            record.treatment_cycle || patientData.treatment_cycle
+          ) as { count: number };
+
+          // If appointment count reaches or exceeds contract months, mark as completed
+          if (
+            apptCount &&
+            apptCount.count >= patientData.current_contract_months
+          ) {
+            const updateStatusStmt = db.prepare(`
+              UPDATE orthodontic_patients
+              SET treatment_status = 'Completed'
+              WHERE patient_id = ?
+            `);
+
+            updateStatusStmt.run(record.patient_id);
+          }
+        }
+      }
+
+      // Commit the transaction
+      db.prepare("COMMIT").run();
+
+      return { success: true };
+    } catch (error) {
+      // If any error occurs, roll back the transaction
+      db.prepare("ROLLBACK").run();
+      throw error;
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Error adding orthodontic treatment record:", errorMessage);
@@ -688,10 +839,10 @@ export function getPatientDetails(
 
       // Fetch payment history
       const paymentStmt = db.prepare(`
-        SELECT payment_id, patient_id, treatment_record_id, payment_date,
+        SELECT payment_id, patient_id, treatment_record_id, patient_type, payment_date,
                amount_paid, payment_method, remaining_balance, notes, created_at
         FROM payment_history
-        WHERE patient_id = ?
+        WHERE patient_id = ? AND patient_type = 'Regular'
         ORDER BY payment_date DESC, created_at DESC
       `);
       paymentHistory = paymentStmt.all(patientId) as PaymentHistory[];
@@ -703,7 +854,8 @@ export function getPatientDetails(
                chart, sex, age, chief_complaint, past_medical_dental_history,
                prior_orthodontic_history, under_treatment_or_medication,
                congenital_abnormalities, temporomandibular_joint_problems,
-               oral_hygiene, gingival_tissues, created_at
+               oral_hygiene, gingival_tissues, treatment_status, current_contract_price,
+               current_contract_months, current_balance, treatment_cycle, created_at
         FROM orthodontic_patients
         WHERE patient_id = ?
       `);
@@ -716,8 +868,8 @@ export function getPatientDetails(
 
       // Fetch treatment records
       const recordsStmt = db.prepare(`
-        SELECT record_id, patient_id, appt_no, date, arch_wire, procedure,
-               amount_paid, mode_of_payment, next_schedule
+        SELECT record_id, patient_id, treatment_cycle, appt_no, date, arch_wire, procedure,
+               contract_price, contract_months, amount_paid, mode_of_payment, next_schedule
         FROM orthodontic_treatment_records
         WHERE patient_id = ?
         ORDER BY date DESC
@@ -725,6 +877,16 @@ export function getPatientDetails(
       treatmentRecords = recordsStmt.all(
         patientId
       ) as OrthodonticTreatmentRecord[];
+
+      // Fetch payment history for orthodontic patients
+      const paymentStmt = db.prepare(`
+        SELECT payment_id, patient_id, treatment_record_id, patient_type, payment_date,
+               amount_paid, payment_method, remaining_balance, notes, created_at
+        FROM payment_history
+        WHERE patient_id = ? AND patient_type = 'Ortho'
+        ORDER BY payment_date DESC, created_at DESC
+      `);
+      paymentHistory = paymentStmt.all(patientId) as PaymentHistory[];
     } else {
       throw new Error("Invalid patient type");
     }
@@ -759,27 +921,56 @@ export function addPaymentHistory(
   error?: string;
 } {
   try {
-    const stmt = db.prepare(`
-      INSERT INTO payment_history (
-        patient_id, treatment_record_id, payment_date, amount_paid,
-        payment_method, remaining_balance, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
+    // Begin transaction
+    db.prepare("BEGIN TRANSACTION").run();
 
-    const result = stmt.run(
-      payment.patient_id,
-      payment.treatment_record_id || null,
-      payment.payment_date,
-      payment.amount_paid,
-      payment.payment_method,
-      payment.remaining_balance,
-      payment.notes || null
-    );
+    try {
+      // Insert payment history record
+      const stmt = db.prepare(`
+        INSERT INTO payment_history (
+          patient_id, treatment_record_id, patient_type, payment_date, amount_paid,
+          payment_method, remaining_balance, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
 
-    return {
-      success: true,
-      payment_id: Number(result.lastInsertRowid),
-    };
+      const result = stmt.run(
+        payment.patient_id,
+        payment.treatment_record_id || null,
+        payment.patient_type,
+        payment.payment_date,
+        payment.amount_paid,
+        payment.payment_method,
+        payment.remaining_balance,
+        payment.notes || null
+      );
+
+      // If this is an orthodontic patient, update their current balance
+      if (payment.patient_type === "Ortho") {
+        const updateBalanceStmt = db.prepare(`
+          UPDATE orthodontic_patients
+          SET current_balance = ?
+          WHERE patient_id = ?
+        `);
+
+        updateBalanceStmt.run(payment.remaining_balance, payment.patient_id);
+
+        // Note: We don't automatically mark the treatment as completed here
+        // Treatment completion is based on appointment count reaching contract months
+        // This is handled in the addOrthodonticTreatmentRecord function
+      }
+
+      // Commit the transaction
+      db.prepare("COMMIT").run();
+
+      return {
+        success: true,
+        payment_id: Number(result.lastInsertRowid),
+      };
+    } catch (error) {
+      // If any error occurs, roll back the transaction
+      db.prepare("ROLLBACK").run();
+      throw error;
+    }
   } catch (error) {
     console.error("Error adding payment history:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -941,27 +1132,41 @@ export function updateMedicalHistory(
 }
 
 // Get next appointment number for an orthodontic patient
-export function getNextOrthoAppointmentNumber(patientId: number): {
+export function getNextOrthoAppointmentNumber(
+  patientId: number,
+  treatmentCycle?: number
+): {
   success: boolean;
   next_appt_no?: number;
   error?: string;
 } {
   try {
-    const stmt = db.prepare(`
+    let query = `
       SELECT appt_no
       FROM orthodontic_treatment_records
       WHERE patient_id = ?
-      ORDER BY CAST(appt_no AS INTEGER) DESC
-      LIMIT 1
-    `);
+    `;
 
-    const result = stmt.get(patientId) as { appt_no: string } | undefined;
+    const params = [patientId];
+
+    // If treatment cycle is specified, filter by it
+    if (treatmentCycle !== undefined) {
+      query += ` AND treatment_cycle = ?`;
+      params.push(treatmentCycle);
+    }
+
+    query += ` ORDER BY CAST(appt_no AS INTEGER) DESC LIMIT 1`;
+
+    const stmt = db.prepare(query);
+    const result = stmt.get(...params) as { appt_no: string } | undefined;
 
     // If no previous appointments, start with 1, otherwise increment by 1
     const nextApptNo = result ? parseInt(result.appt_no) + 1 : 1;
 
     console.log(
-      `Next appointment number for patient ${patientId}: ${nextApptNo}`
+      `Next appointment number for patient ${patientId}${
+        treatmentCycle ? ` (cycle ${treatmentCycle})` : ""
+      }: ${nextApptNo}`
     );
 
     return {
@@ -971,6 +1176,177 @@ export function getNextOrthoAppointmentNumber(patientId: number): {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Error getting next appointment number:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+// Start a new treatment cycle for a returning orthodontic patient
+export function startNewOrthodonticTreatmentCycle(
+  patientId: number,
+  contractPrice?: number,
+  contractMonths?: number
+): {
+  success: boolean;
+  new_cycle?: number;
+  error?: string;
+} {
+  try {
+    // Begin transaction
+    db.prepare("BEGIN TRANSACTION").run();
+
+    try {
+      // Get the current treatment cycle
+      const getCycleStmt = db.prepare(`
+        SELECT treatment_cycle FROM orthodontic_patients
+        WHERE patient_id = ?
+      `);
+
+      const cycleResult = getCycleStmt.get(patientId) as
+        | { treatment_cycle: number }
+        | undefined;
+
+      if (!cycleResult) {
+        throw new Error("Patient not found");
+      }
+
+      // Increment the treatment cycle
+      const newCycle = (cycleResult.treatment_cycle || 1) + 1;
+
+      // Update the patient record
+      const updatePatientStmt = db.prepare(`
+        UPDATE orthodontic_patients
+        SET treatment_status = 'In Progress',
+            treatment_cycle = ?,
+            current_contract_price = ?,
+            current_contract_months = ?,
+            current_balance = ?
+        WHERE patient_id = ?
+      `);
+
+      updatePatientStmt.run(
+        newCycle,
+        contractPrice || null,
+        contractMonths || null,
+        contractPrice || null, // Initial balance is the full contract price
+        patientId
+      );
+
+      // Commit the transaction
+      db.prepare("COMMIT").run();
+
+      return {
+        success: true,
+        new_cycle: newCycle,
+      };
+    } catch (error) {
+      // If any error occurs, roll back the transaction
+      db.prepare("ROLLBACK").run();
+      throw error;
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error starting new treatment cycle:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+// Update orthodontic contract details during treatment
+export function updateOrthodonticContractDetails(
+  patientId: number,
+  contractPrice?: number,
+  contractMonths?: number
+): {
+  success: boolean;
+  error?: string;
+} {
+  try {
+    // Begin transaction
+    db.prepare("BEGIN TRANSACTION").run();
+
+    try {
+      // Get current patient details
+      const getPatientStmt = db.prepare(`
+        SELECT current_contract_price, current_balance, treatment_cycle
+        FROM orthodontic_patients
+        WHERE patient_id = ?
+      `);
+
+      const patientData = getPatientStmt.get(patientId) as
+        | {
+            current_contract_price: number;
+            current_balance: number;
+            treatment_cycle: number;
+          }
+        | undefined;
+
+      if (!patientData) {
+        throw new Error("Patient not found");
+      }
+
+      // Calculate new balance if contract price is changing
+      let newBalance = patientData.current_balance;
+      if (
+        contractPrice !== undefined &&
+        patientData.current_contract_price !== null
+      ) {
+        // Calculate how much has been paid so far
+        const paidSoFar =
+          patientData.current_contract_price - patientData.current_balance;
+        // New balance is new price minus amount already paid
+        newBalance = Math.max(0, contractPrice - paidSoFar);
+      }
+
+      // Update the patient record with new contract details
+      const updateStmt = db.prepare(`
+        UPDATE orthodontic_patients
+        SET current_contract_price = COALESCE(?, current_contract_price),
+            current_contract_months = COALESCE(?, current_contract_months),
+            current_balance = ?
+        WHERE patient_id = ?
+      `);
+
+      updateStmt.run(
+        contractPrice !== undefined ? contractPrice : null,
+        contractMonths !== undefined ? contractMonths : null,
+        newBalance,
+        patientId
+      );
+
+      // Also update the first treatment record of the current cycle to reflect the new contract details
+      if (contractPrice !== undefined || contractMonths !== undefined) {
+        const updateRecordStmt = db.prepare(`
+          UPDATE orthodontic_treatment_records
+          SET contract_price = COALESCE(?, contract_price),
+              contract_months = COALESCE(?, contract_months)
+          WHERE patient_id = ? AND treatment_cycle = ? AND appt_no = '1'
+        `);
+
+        updateRecordStmt.run(
+          contractPrice !== undefined ? contractPrice : null,
+          contractMonths !== undefined ? contractMonths : null,
+          patientId,
+          patientData.treatment_cycle
+        );
+      }
+
+      // Commit the transaction
+      db.prepare("COMMIT").run();
+
+      return { success: true };
+    } catch (error) {
+      // If any error occurs, roll back the transaction
+      db.prepare("ROLLBACK").run();
+      throw error;
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error updating orthodontic contract details:", errorMessage);
     return {
       success: false,
       error: errorMessage,

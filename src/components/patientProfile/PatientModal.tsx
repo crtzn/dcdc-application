@@ -36,8 +36,11 @@ import RegularPatientEditForm from "@/components/regular/patientEditForm";
 import OrthodonticPatientEditForm from "@/components/orthodontic/orthodonticPatientEditForm";
 import MedicalHistoryEditForm from "@/components/regular/medicalHistoryEditForm";
 import PaymentForm from "@/components/regular/payment-form";
+import OrthodonticPaymentForm from "@/components/orthodontic/orthodontic-payment-form";
+import NewTreatmentCycleForm from "@/components/orthodontic/new-treatment-cycle-form";
+import UpdateContractForm from "@/components/orthodontic/update-contract-form";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
-import { Trash2 } from "lucide-react";
+import { Trash2, RefreshCw, Edit } from "lucide-react";
 
 interface PatientDetailsModalProps {
   patient: {
@@ -64,6 +67,8 @@ const PatientDetailsModal = ({
   const [showMedicalHistoryEditForm, setShowMedicalHistoryEditForm] =
     useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showNewCycleForm, setShowNewCycleForm] = useState(false);
+  const [showUpdateContractForm, setShowUpdateContractForm] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [selectedMedicalHistory, setSelectedMedicalHistory] =
     useState<RegularMedicalHistory | null>(null);
@@ -169,11 +174,7 @@ const PatientDetailsModal = ({
         margin + logoWidth + 10,
         27
       );
-      doc.text(
-        "Phone: 0943 586 2245 | Email: example@gmail.com",
-        margin + logoWidth + 10,
-        34
-      );
+      doc.text("Phone: 0943 586 2245", margin + logoWidth + 10, 34);
 
       // Tagline
       doc.setFontSize(12);
@@ -200,6 +201,7 @@ const PatientDetailsModal = ({
       if (yOffset > 250) {
         doc.addPage();
         addHeader();
+        yOffset = 50; // Reset yOffset after header
       }
     };
 
@@ -289,7 +291,7 @@ const PatientDetailsModal = ({
         ]
       );
       doc.text(`${label}:`, margin, yOffset);
-      doc.text(value, margin + 40, yOffset); // Align values
+      doc.text(value, margin + 60, yOffset); // Align values
       yOffset += 8;
     });
     yOffset += 10;
@@ -403,7 +405,7 @@ const PatientDetailsModal = ({
           doc.setFontSize(10);
           doc.setFont("helvetica", "normal");
           doc.text(
-            `Total Payments: PHP ${totalPaid.toLocaleString(undefined, {
+            `Total Payments: Php ${totalPaid.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}`,
@@ -445,12 +447,12 @@ const PatientDetailsModal = ({
 
               return [
                 formattedDate,
-                `PHP ${payment.amount_paid.toLocaleString(undefined, {
+                `Php ${payment.amount_paid.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}`,
                 payment.payment_method,
-                `PHP ${payment.remaining_balance.toLocaleString(undefined, {
+                `Php ${payment.remaining_balance.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}`,
@@ -523,7 +525,7 @@ const PatientDetailsModal = ({
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
             doc.text(
-              `Total Payments: PHP ${totalPaid.toLocaleString(undefined, {
+              `Total Payments: Php ${totalPaid.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}`,
@@ -573,19 +575,19 @@ const PatientDetailsModal = ({
               formatValue(record.procedure),
               formatValue(record.dentist_name),
               record.amount_charged
-                ? `PHP ${record.amount_charged.toLocaleString(undefined, {
+                ? `Php ${record.amount_charged.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}`
                 : "N/A",
               record.amount_paid
-                ? `PHP ${record.amount_paid.toLocaleString(undefined, {
+                ? `Php ${record.amount_paid.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}`
                 : "N/A",
               record.balance
-                ? `PHP ${record.balance.toLocaleString(undefined, {
+                ? `Php ${record.balance.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}`
@@ -632,98 +634,242 @@ const PatientDetailsModal = ({
           yOffset += maxHeight + 2;
         });
       } else {
-        const headers = [
-          "Appt #",
-          "Date",
-          "Arch Wire",
-          "Procedure",
-          "Amount Paid",
-          "Payment Mode",
-          "Next Schedule",
-        ];
-        const columnWidths = [20, 25, 25, 30, 25, 25, 30];
-        const data = (
-          patient.treatmentRecords as OrthodonticTreatmentRecord[]
-        ).map((record) => {
-          // Format date to save space (MM/DD/YY)
-          const dateObj = record.date ? new Date(record.date) : null;
-          const formattedDate = dateObj
-            ? `${(dateObj.getMonth() + 1).toString().padStart(2, "0")}/${dateObj
-                .getDate()
-                .toString()
-                .padStart(2, "0")}/${dateObj
-                .getFullYear()
-                .toString()
-                .substring(2)}`
-            : "N/A";
+        // For orthodontic patients, organize records by cycle
+        const records =
+          patient.treatmentRecords as OrthodonticTreatmentRecord[];
 
-          // Format next schedule date
-          const nextDateObj = record.next_schedule
-            ? new Date(record.next_schedule)
-            : null;
-          const formattedNextDate = nextDateObj
-            ? `${(nextDateObj.getMonth() + 1)
-                .toString()
-                .padStart(2, "0")}/${nextDateObj
-                .getDate()
-                .toString()
-                .padStart(2, "0")}/${nextDateObj
-                .getFullYear()
-                .toString()
-                .substring(2)}`
-            : "N/A";
-
-          return [
-            formatValue(record.appt_no),
-            formattedDate,
-            formatValue(record.arch_wire),
-            formatValue(record.procedure),
-            record.amount_paid
-              ? `PHP ${record.amount_paid.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}`
-              : "N/A",
-            formatValue(record.mode_of_payment),
-            formattedNextDate,
-          ];
-        });
-
-        // Draw Headers
-        doc.setFontSize(9); // Slightly smaller font for headers
-        doc.setTextColor(255, 255, 255);
-        doc.setFillColor(39, 118, 171);
-        doc.rect(margin, yOffset - 5, usableWidth, 10, "F");
-        let xOffset = margin;
-        headers.forEach((header, index) => {
-          doc.text(header, xOffset + 3, yOffset); // Add 3mm padding for text
-          xOffset += columnWidths[index];
-        });
-        yOffset += 8;
-
-        // Draw Data Rows
-        doc.setTextColor(0, 0, 0);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8); // Smaller font for data to prevent overlap
-        data.forEach((row, rowIndex) => {
-          checkPage();
-          xOffset = margin;
-          let maxHeight = 0;
-          if (rowIndex % 2 === 0) {
-            doc.setFillColor(240, 240, 240);
-            doc.rect(margin, yOffset - 5, usableWidth, 10, "F");
+        // Group records by cycle
+        const recordsByCycle: { [key: string]: OrthodonticTreatmentRecord[] } =
+          {};
+        records.forEach((record) => {
+          const cycle = record.treatment_cycle || 1;
+          if (!recordsByCycle[cycle]) {
+            recordsByCycle[cycle] = [];
           }
-          row.forEach((cell, index) => {
-            const wrappedText = doc.splitTextToSize(
-              cell,
-              columnWidths[index] - 6
-            ); // Reduce width for better spacing
-            doc.text(wrappedText, xOffset + 3, yOffset); // Add 3mm padding for text
-            const cellHeight = wrappedText.length * 5;
-            maxHeight = Math.max(maxHeight, cellHeight);
+          recordsByCycle[cycle].push(record);
+        });
+
+        // Sort cycles
+        const sortedCycles = Object.keys(recordsByCycle)
+          .map(Number)
+          .sort((a, b) => a - b);
+
+        // Process each cycle
+        sortedCycles.forEach((cycle, index) => {
+          // Add extra space before cycles after the first one
+          if (index > 0) {
+            yOffset += 10;
+          }
+
+          // Check if we need a new page
+          checkPage();
+
+          // Add cycle title with blue background
+          doc.setFillColor(39, 118, 171);
+          doc.rect(margin, yOffset - 5, usableWidth, 12, "F");
+
+          // Add cycle title
+          doc.setFontSize(12);
+          doc.setTextColor(255, 255, 255);
+          doc.setFont("helvetica", "bold");
+          doc.text(`Treatment Cycle #${cycle}`, margin + 5, yOffset + 2);
+          yOffset += 15;
+
+          // Get cycle-specific data
+          const cycleRecords = recordsByCycle[cycle];
+
+          // Find the first record in this cycle to get contract details
+          const firstRecord = cycleRecords.find(
+            (record) => record.contract_price && record.contract_months
+          );
+
+          // Get contract price and months for this specific cycle
+          const cycleContractPrice = firstRecord?.contract_price || 0;
+          const cycleContractMonths = firstRecord?.contract_months || 0;
+
+          // Calculate total paid for this cycle
+          const cycleTotalPaid = cycleRecords.reduce(
+            (sum, record) => sum + (record.amount_paid || 0),
+            0
+          );
+
+          // Calculate balance for this cycle
+          const cycleBalance = Math.max(0, cycleContractPrice - cycleTotalPaid);
+
+          // Create financial summary cards
+          const cardWidth = usableWidth / 4 - 4; // 4 cards with small gap
+          const cardHeight = 25;
+
+          // Draw 4 cards with borders and light background
+          for (let i = 0; i < 4; i++) {
+            const cardX = margin + (cardWidth + 4) * i;
+
+            // Card background
+            doc.setFillColor(245, 250, 255);
+            doc.rect(cardX, yOffset, cardWidth, cardHeight, "F");
+
+            // Card border
+            doc.setDrawColor(200, 220, 240);
+            doc.setLineWidth(0.5);
+            doc.rect(cardX, yOffset, cardWidth, cardHeight, "S");
+          }
+
+          // Contract Price
+          doc.setTextColor(39, 118, 171);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(8);
+          doc.text("Contract Price", margin + 5, yOffset + 7);
+          doc.setTextColor(0, 0, 0);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          doc.text(
+            `Php ${cycleContractPrice.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`,
+            margin + 5,
+            yOffset + 17
+          );
+
+          // Contract Duration
+          const card2X = margin + cardWidth + 4;
+          doc.setTextColor(39, 118, 171);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(8);
+          doc.text("Contract Duration", card2X + 5, yOffset + 7);
+          doc.setTextColor(0, 0, 0);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          doc.text(`${cycleContractMonths} months`, card2X + 5, yOffset + 17);
+
+          // Total Paid
+          const card3X = margin + (cardWidth + 4) * 2;
+          doc.setTextColor(39, 118, 171);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(8);
+          doc.text("Total Paid", card3X + 5, yOffset + 7);
+          doc.setTextColor(0, 102, 0); // Green color for paid amount
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          doc.text(
+            `Php ${cycleTotalPaid.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`,
+            card3X + 5,
+            yOffset + 17
+          );
+
+          // Cycle Balance
+          const card4X = margin + (cardWidth + 4) * 3;
+          doc.setTextColor(39, 118, 171);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(8);
+          doc.text("Cycle Balance", card4X + 5, yOffset + 7);
+          doc.setTextColor(204, 0, 0); // Red color for balance
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          doc.text(
+            `Php ${cycleBalance.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`,
+            card4X + 5,
+            yOffset + 17
+          );
+
+          // Move down after the summary cards
+          yOffset += cardHeight + 10;
+
+          // Check if we need a new page before adding the table
+          checkPage();
+
+          // Table headers
+          const headers = [
+            "Appt #",
+            "Date",
+            "Arch Wire",
+            "Procedure",
+            "Amount Paid",
+            "Payment Mode",
+          ];
+          const columnWidths = [20, 25, 30, 35, 30, 30];
+
+          // Prepare data for this cycle
+          const data = recordsByCycle[cycle].map((record) => {
+            // Format date to save space (MM/DD/YY)
+            const dateObj = record.date ? new Date(record.date) : null;
+            const formattedDate = dateObj
+              ? `${(dateObj.getMonth() + 1)
+                  .toString()
+                  .padStart(2, "0")}/${dateObj
+                  .getDate()
+                  .toString()
+                  .padStart(2, "0")}/${dateObj
+                  .getFullYear()
+                  .toString()
+                  .substring(2)}`
+              : "N/A";
+
+            return [
+              formatValue(record.appt_no),
+              formattedDate,
+              formatValue(record.arch_wire),
+              formatValue(record.procedure),
+              record.amount_paid
+                ? `Php ${record.amount_paid.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`
+                : "N/A",
+              formatValue(record.mode_of_payment),
+            ];
+          });
+
+          // Draw Headers
+          doc.setFontSize(9); // Slightly smaller font for headers
+          doc.setTextColor(255, 255, 255);
+          doc.setFillColor(39, 118, 171);
+          doc.rect(margin, yOffset - 5, usableWidth, 10, "F");
+          let xOffset = margin;
+          headers.forEach((header, index) => {
+            doc.text(header, xOffset + 3, yOffset); // Add 3mm padding for text
             xOffset += columnWidths[index];
           });
-          yOffset += maxHeight + 2;
+          yOffset += 8;
+
+          // Draw Data Rows
+          doc.setTextColor(0, 0, 0);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8); // Smaller font for data to prevent overlap
+
+          // Check if we need a new page before adding data rows
+          checkPage();
+
+          data.forEach((row, rowIndex) => {
+            // Check page before each row
+            checkPage();
+            xOffset = margin;
+            let maxHeight = 0;
+            if (rowIndex % 2 === 0) {
+              doc.setFillColor(240, 240, 240);
+              doc.rect(margin, yOffset - 5, usableWidth, 10, "F");
+            }
+            row.forEach((cell, index) => {
+              const wrappedText = doc.splitTextToSize(
+                cell,
+                columnWidths[index] - 6
+              ); // Reduce width for better spacing
+              doc.text(wrappedText, xOffset + 3, yOffset); // Add 3mm padding for text
+              const cellHeight = wrappedText.length * 5;
+              maxHeight = Math.max(maxHeight, cellHeight);
+              xOffset += columnWidths[index];
+            });
+            yOffset += maxHeight + 2;
+          });
+
+          // Add space between cycles
+          yOffset += 15;
         });
       }
     } else {
@@ -1123,6 +1269,167 @@ const PatientDetailsModal = ({
   const renderPaymentHistory = () => {
     if (!patient.paymentHistory || patient.paymentHistory.length === 0) {
       // Check if there are treatment records with balances
+      if (type === "Regular") {
+        const recordsWithBalances = patient.treatmentRecords
+          ? (patient.treatmentRecords as RegularTreatmentRecord[]).filter(
+              (record) => record.balance && record.balance > 0
+            )
+          : [];
+
+        return (
+          <div className="space-y-6">
+            <p className="text-gray-500 text-center p-4">
+              No payment history available.
+            </p>
+
+            {recordsWithBalances.length > 0 && (
+              <div className="flex flex-col items-center">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Outstanding Balances
+                </h3>
+                <div className="w-full max-w-2xl overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Procedure</TableHead>
+                        <TableHead>Balance</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recordsWithBalances.map((record) => (
+                        <TableRow key={record.record_id}>
+                          <TableCell>
+                            {formatValue(record.treatment_date)}
+                          </TableCell>
+                          <TableCell>{formatValue(record.procedure)}</TableCell>
+                          <TableCell className="font-medium text-red-600">
+                            ₱
+                            {record.balance?.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              onClick={() => {
+                                setSelectedTreatmentRecord(record);
+                                setShowPaymentForm(true);
+                              }}
+                              className="bg-green-600 hover:bg-green-700 text-white text-xs py-1 px-2"
+                              size="sm"
+                            >
+                              Make Payment
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      } else {
+        // For orthodontic patients with no payment history
+        const orthoPatient = patient.info as OrthodonticPatient;
+        return (
+          <div className="space-y-6">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                Payment Summary
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white p-3 rounded-md shadow-sm">
+                  <p className="text-sm text-gray-500">Contract Price</p>
+                  <p className="text-xl font-bold text-blue-600">
+                    ₱
+                    {(orthoPatient.current_contract_price || 0).toLocaleString(
+                      undefined,
+                      {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }
+                    )}
+                  </p>
+                </div>
+                <div className="bg-white p-3 rounded-md shadow-sm">
+                  <p className="text-sm text-gray-500">Current Balance</p>
+                  <p className="text-xl font-bold text-red-600">
+                    ₱
+                    {(orthoPatient.current_balance || 0).toLocaleString(
+                      undefined,
+                      {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }
+                    )}
+                  </p>
+                </div>
+                <div className="bg-white p-3 rounded-md shadow-sm">
+                  <p className="text-sm text-gray-500">Treatment Status</p>
+                  <p className="text-xl font-bold text-blue-600">
+                    {orthoPatient.treatment_status || "Not Started"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-center">
+              <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 max-w-xl w-full">
+                <div className="flex items-center gap-2 text-amber-700 mb-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <p className="text-sm font-medium">
+                    No payment history available
+                  </p>
+                </div>
+                <p className="text-xs text-amber-600 ml-7">
+                  Treatment status is based on appointment count (
+                  {orthoPatient.current_contract_months || 0} appointments
+                  needed), not payment completion.
+                </p>
+              </div>
+            </div>
+
+            {(orthoPatient.current_balance || 0) > 0 && (
+              <div className="flex justify-center mt-4">
+                <Button
+                  onClick={() => setShowPaymentForm(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Make Payment
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+      }
+    }
+
+    // Calculate total payments
+    const totalPaid = patient.paymentHistory.reduce(
+      (sum: number, payment: PaymentHistory) => sum + payment.amount_paid,
+      0
+    );
+
+    if (type === "Regular") {
+      // Get records with outstanding balances for regular patients
       const recordsWithBalances = patient.treatmentRecords
         ? (patient.treatmentRecords as RegularTreatmentRecord[]).filter(
             (record) => record.balance && record.balance > 0
@@ -1131,16 +1438,51 @@ const PatientDetailsModal = ({
 
       return (
         <div className="space-y-6">
-          <p className="text-gray-500 text-center p-4">
-            No payment history available.
-          </p>
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-4">
+            <h3 className="text-lg font-semibold text-blue-800 mb-2">
+              Payment Summary
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white p-3 rounded-md shadow-sm">
+                <p className="text-sm text-gray-500">Total Payments</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  ₱
+                  {totalPaid.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
+              </div>
+              <div className="bg-white p-3 rounded-md shadow-sm">
+                <p className="text-sm text-gray-500">Payment Transactions</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {patient.paymentHistory.length}
+                </p>
+              </div>
+              <div className="bg-white p-3 rounded-md shadow-sm">
+                <p className="text-sm text-gray-500">Outstanding Balances</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {recordsWithBalances.length}
+                </p>
+              </div>
+            </div>
+          </div>
 
           {recordsWithBalances.length > 0 && (
-            <div className="flex flex-col items-center">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Outstanding Balances
-              </h3>
-              <div className="w-full max-w-2xl overflow-x-auto">
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Outstanding Balances
+                </h3>
+                <Button
+                  onClick={() => setShowPaymentForm(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white text-sm"
+                  size="sm"
+                >
+                  Make Payment
+                </Button>
+              </div>
+              <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1183,156 +1525,167 @@ const PatientDetailsModal = ({
               </div>
             </div>
           )}
-        </div>
-      );
-    }
 
-    // Calculate total payments
-    const totalPaid = patient.paymentHistory.reduce(
-      (sum: number, payment: PaymentHistory) => sum + payment.amount_paid,
-      0
-    );
-
-    // Get records with outstanding balances
-    const recordsWithBalances = patient.treatmentRecords
-      ? (patient.treatmentRecords as RegularTreatmentRecord[]).filter(
-          (record) => record.balance && record.balance > 0
-        )
-      : [];
-
-    return (
-      <div className="space-y-6">
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-4">
-          <h3 className="text-lg font-semibold text-blue-800 mb-2">
-            Payment Summary
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-3 rounded-md shadow-sm">
-              <p className="text-sm text-gray-500">Total Payments</p>
-              <p className="text-2xl font-bold text-blue-600">
-                ₱
-                {totalPaid.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </p>
-            </div>
-            <div className="bg-white p-3 rounded-md shadow-sm">
-              <p className="text-sm text-gray-500">Payment Transactions</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {patient.paymentHistory.length}
-              </p>
-            </div>
-            <div className="bg-white p-3 rounded-md shadow-sm">
-              <p className="text-sm text-gray-500">Outstanding Balances</p>
-              <p className="text-2xl font-bold text-red-600">
-                {recordsWithBalances.length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {recordsWithBalances.length > 0 && (
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-semibold text-gray-800">
-                Outstanding Balances
-              </h3>
-              <Button
-                onClick={() => setShowPaymentForm(true)}
-                className="bg-green-600 hover:bg-green-700 text-white text-sm"
-                size="sm"
-              >
-                Make Payment
-              </Button>
-            </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Payment History
+            </h3>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead>Procedure</TableHead>
-                    <TableHead>Balance</TableHead>
-                    <TableHead>Action</TableHead>
+                    <TableHead>Amount Paid</TableHead>
+                    <TableHead>Payment Method</TableHead>
+                    <TableHead>Remaining Balance</TableHead>
+                    <TableHead>Notes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recordsWithBalances.map((record) => (
-                    <TableRow key={record.record_id}>
-                      <TableCell>
-                        {formatValue(record.treatment_date)}
-                      </TableCell>
-                      <TableCell>{formatValue(record.procedure)}</TableCell>
-                      <TableCell className="font-medium text-red-600">
+                  {patient.paymentHistory.map((payment: PaymentHistory) => (
+                    <TableRow key={payment.payment_id}>
+                      <TableCell>{formatValue(payment.payment_date)}</TableCell>
+                      <TableCell className="font-medium text-green-600">
                         ₱
-                        {record.balance?.toLocaleString(undefined, {
+                        {payment.amount_paid.toLocaleString(undefined, {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          onClick={() => {
-                            setSelectedTreatmentRecord(record);
-                            setShowPaymentForm(true);
-                          }}
-                          className="bg-green-600 hover:bg-green-700 text-white text-xs py-1 px-2"
-                          size="sm"
-                        >
-                          Make Payment
-                        </Button>
+                        {formatValue(payment.payment_method)}
                       </TableCell>
+                      <TableCell className="font-medium text-blue-600">
+                        ₱
+                        {payment.remaining_balance.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </TableCell>
+                      <TableCell>{formatValue(payment.notes)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
           </div>
-        )}
+        </div>
+      );
+    } else {
+      // For orthodontic patients with payment history
+      const orthoPatient = patient.info as OrthodonticPatient;
 
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">
-            Payment History
-          </h3>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount Paid</TableHead>
-                  <TableHead>Payment Method</TableHead>
-                  <TableHead>Remaining Balance</TableHead>
-                  <TableHead>Notes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {patient.paymentHistory.map((payment: PaymentHistory) => (
-                  <TableRow key={payment.payment_id}>
-                    <TableCell>{formatValue(payment.payment_date)}</TableCell>
-                    <TableCell className="font-medium text-green-600">
-                      ₱
-                      {payment.amount_paid.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </TableCell>
-                    <TableCell>{formatValue(payment.payment_method)}</TableCell>
-                    <TableCell className="font-medium text-blue-600">
-                      ₱
-                      {payment.remaining_balance.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </TableCell>
-                    <TableCell>{formatValue(payment.notes)}</TableCell>
+      return (
+        <div className="space-y-6">
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <h3 className="text-lg font-semibold text-blue-800 mb-2">
+              Payment Summary
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div className="bg-white p-3 rounded-md shadow-sm">
+                <p className="text-sm text-gray-500">Contract Price</p>
+                <p className="text-xl font-bold text-blue-600">
+                  ₱
+                  {(orthoPatient.current_contract_price || 0).toLocaleString(
+                    undefined,
+                    {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }
+                  )}
+                </p>
+              </div>
+              <div className="bg-white p-3 rounded-md shadow-sm">
+                <p className="text-sm text-gray-500">Total Paid</p>
+                <p className="text-xl font-bold text-green-600">
+                  ₱
+                  {totalPaid.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
+              </div>
+              <div className="bg-white p-3 rounded-md shadow-sm">
+                <p className="text-sm text-gray-500">Current Balance</p>
+                <p className="text-xl font-bold text-red-600">
+                  ₱
+                  {(orthoPatient.current_balance || 0).toLocaleString(
+                    undefined,
+                    {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }
+                  )}
+                </p>
+                {(orthoPatient.current_balance || 0) > 0 && (
+                  <Button
+                    onClick={() => setShowPaymentForm(true)}
+                    className="mt-2 bg-green-600 hover:bg-green-700 text-white text-xs w-full"
+                    size="sm"
+                  >
+                    Make Payment
+                  </Button>
+                )}
+              </div>
+              <div className="bg-white p-3 rounded-md shadow-sm">
+                <p className="text-sm text-gray-500">Treatment Status</p>
+                <p className="text-xl font-bold text-blue-600">
+                  {orthoPatient.treatment_status || "Not Started"}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {orthoPatient.current_contract_months || 0} appointments
+                  needed
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Payment History
+            </h3>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Amount Paid</TableHead>
+                    <TableHead>Payment Method</TableHead>
+                    <TableHead>Remaining Balance</TableHead>
+                    <TableHead>Notes</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {patient.paymentHistory.map((payment: PaymentHistory) => (
+                    <TableRow key={payment.payment_id}>
+                      <TableCell>{formatValue(payment.payment_date)}</TableCell>
+                      <TableCell className="font-medium text-green-600">
+                        ₱
+                        {payment.amount_paid.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        {formatValue(payment.payment_method)}
+                      </TableCell>
+                      <TableCell className="font-medium text-blue-600">
+                        ₱
+                        {payment.remaining_balance.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </TableCell>
+                      <TableCell>{formatValue(payment.notes)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
-      </div>
-    );
+      );
+    }
   };
 
   const renderTreatmentRecords = () => {
@@ -1381,36 +1734,180 @@ const PatientDetailsModal = ({
       );
     }
 
+    // For orthodontic patients, first show contract and payment summary
+    const orthoPatient = patient.info as OrthodonticPatient;
+    const treatmentRecords =
+      patient.treatmentRecords as OrthodonticTreatmentRecord[];
+
+    // Group records by treatment cycle
+    const recordsByCycle: Record<string, OrthodonticTreatmentRecord[]> = {};
+    treatmentRecords.forEach((record) => {
+      const cycle = record.treatment_cycle?.toString() || "1";
+      if (!recordsByCycle[cycle]) {
+        recordsByCycle[cycle] = [];
+      }
+      recordsByCycle[cycle].push(record);
+    });
+
+    // Sort cycles in descending order (newest first)
+    const sortedCycles = Object.keys(recordsByCycle).sort(
+      (a, b) => parseInt(b) - parseInt(a)
+    );
+
+    // Calculate total paid for current cycle
+    const currentCycle = orthoPatient.treatment_cycle?.toString() || "1";
+    const currentCycleRecords = recordsByCycle[currentCycle] || [];
+    const totalPaid = currentCycleRecords.reduce(
+      (sum, record) => sum + (record.amount_paid || 0),
+      0
+    );
+
     return (
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Appointment No.</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Arch Wire</TableHead>
-              <TableHead>Procedure</TableHead>
-              <TableHead>Amount Paid</TableHead>
-              <TableHead>Mode of Payment</TableHead>
-              <TableHead>Next Schedule</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(patient.treatmentRecords as OrthodonticTreatmentRecord[]).map(
-              (record) => (
-                <TableRow key={record.record_id}>
-                  <TableCell>{formatValue(record.appt_no)}</TableCell>
-                  <TableCell>{formatValue(record.date)}</TableCell>
-                  <TableCell>{formatValue(record.arch_wire)}</TableCell>
-                  <TableCell>{formatValue(record.procedure)}</TableCell>
-                  <TableCell>{formatValue(record.amount_paid)}</TableCell>
-                  <TableCell>{formatValue(record.mode_of_payment)}</TableCell>
-                  <TableCell>{formatValue(record.next_schedule)}</TableCell>
-                </TableRow>
-              )
-            )}
-          </TableBody>
-        </Table>
+      <div className="space-y-6">
+        {/* Contract and Payment Summary */}
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+          <div className="flex justify-between items-center mb-2">
+            <div>
+              <h3 className="text-lg font-semibold text-blue-800">
+                Treatment Cycle #{orthoPatient.treatment_cycle || 1} -{" "}
+                {orthoPatient.treatment_status || "Not Started"}
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Treatment status will be marked as "Completed" when{" "}
+                {orthoPatient.current_contract_months || 0} appointments are
+                reached.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {orthoPatient.treatment_status === "In Progress" && (
+                <Button
+                  onClick={() => setShowUpdateContractForm(true)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white text-sm flex items-center gap-1"
+                  size="sm"
+                >
+                  <Edit size={14} />
+                  Update Contract
+                </Button>
+              )}
+              {orthoPatient.treatment_status === "Completed" && (
+                <Button
+                  onClick={() => setShowNewCycleForm(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm flex items-center gap-1"
+                  size="sm"
+                >
+                  <RefreshCw size={14} />
+                  Start New Cycle
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4">
+            <div className="bg-white p-3 rounded-md shadow-sm">
+              <p className="text-sm text-gray-500">Contract Price</p>
+              <p className="text-xl font-bold text-blue-600">
+                ₱
+                {(orthoPatient.current_contract_price || 0).toLocaleString(
+                  undefined,
+                  {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }
+                )}
+              </p>
+            </div>
+            <div className="bg-white p-3 rounded-md shadow-sm">
+              <p className="text-sm text-gray-500">Contract Duration</p>
+              <p className="text-xl font-bold text-blue-600">
+                {orthoPatient.current_contract_months || "N/A"}{" "}
+                {orthoPatient.current_contract_months === 1
+                  ? "month"
+                  : "months"}
+              </p>
+            </div>
+            <div className="bg-white p-3 rounded-md shadow-sm">
+              <p className="text-sm text-gray-500">Total Paid</p>
+              <p className="text-xl font-bold text-green-600">
+                ₱
+                {totalPaid.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+            </div>
+            <div className="bg-white p-3 rounded-md shadow-sm">
+              <p className="text-sm text-gray-500">Current Balance</p>
+              <p className="text-xl font-bold text-red-600">
+                ₱
+                {(orthoPatient.current_balance || 0).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+              {/* Payment button removed as per requirement */}
+            </div>
+          </div>
+        </div>
+
+        {/* Treatment Records by Cycle - with scrolling container */}
+        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+          {sortedCycles.map((cycle) => (
+            <div key={cycle} className="border rounded-lg overflow-hidden">
+              <div className="bg-gray-100 px-4 py-2 border-b sticky top-0 z-10">
+                <h3 className="font-medium">
+                  Treatment Cycle #{cycle} Records
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Appointment</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Arch Wire</TableHead>
+                      <TableHead>Procedure</TableHead>
+                      <TableHead>Amount Paid</TableHead>
+                      <TableHead>Mode of Payment</TableHead>
+                      <TableHead>Next Schedule</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recordsByCycle[cycle].map((record) => (
+                      <TableRow key={record.record_id}>
+                        <TableCell>
+                          {parseInt(record.appt_no) === 1 ? (
+                            <span className="text-black font-medium">
+                              {formatValue(record.appt_no)}
+                            </span>
+                          ) : (
+                            <span>{formatValue(record.appt_no)}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{formatValue(record.date)}</TableCell>
+                        <TableCell>{formatValue(record.arch_wire)}</TableCell>
+                        <TableCell>{formatValue(record.procedure)}</TableCell>
+                        <TableCell>
+                          {record.amount_paid
+                            ? `₱${record.amount_paid.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}`
+                            : "N/A"}
+                        </TableCell>
+                        <TableCell>
+                          {formatValue(record.mode_of_payment)}
+                        </TableCell>
+                        <TableCell>
+                          {formatValue(record.next_schedule)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
@@ -1568,24 +2065,110 @@ const PatientDetailsModal = ({
               Record Payment
             </DialogTitle>
             <p className="text-gray-500 text-sm mt-1">
-              {selectedTreatmentRecord
+              {type === "Regular" && selectedTreatmentRecord
                 ? `Recording payment for treatment on ${formatValue(
                     selectedTreatmentRecord.treatment_date
                   )}`
-                : "Record a new payment"}
+                : "Record a payment for this patient's outstanding balance."}
             </p>
           </DialogHeader>
-          <PaymentForm
+          {type === "Regular" ? (
+            <PaymentForm
+              patientId={patient.info.patient_id!}
+              treatmentRecord={selectedTreatmentRecord || undefined}
+              onSuccess={() => {
+                setShowPaymentForm(false);
+                setSelectedTreatmentRecord(null);
+                onRefresh();
+              }}
+              onCancel={() => {
+                setShowPaymentForm(false);
+                setSelectedTreatmentRecord(null);
+              }}
+            />
+          ) : (
+            <OrthodonticPaymentForm
+              patientId={patient.info.patient_id!}
+              patient={patient.info as OrthodonticPatient}
+              onSuccess={() => {
+                setShowPaymentForm(false);
+                onRefresh();
+              }}
+              onCancel={() => {
+                setShowPaymentForm(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const renderNewCycleForm = () => {
+    if (!showNewCycleForm) return null;
+
+    return (
+      <Dialog open={showNewCycleForm} onOpenChange={setShowNewCycleForm}>
+        <DialogContent
+          className="max-w-3xl"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <RefreshCw size={20} />
+              Start New Treatment Cycle
+            </DialogTitle>
+            <p className="text-gray-500 text-sm mt-1">
+              Start a new treatment cycle for this patient. This will preserve
+              all previous treatment records.
+            </p>
+          </DialogHeader>
+          <NewTreatmentCycleForm
             patientId={patient.info.patient_id!}
-            treatmentRecord={selectedTreatmentRecord || undefined}
             onSuccess={() => {
-              setShowPaymentForm(false);
-              setSelectedTreatmentRecord(null);
+              setShowNewCycleForm(false);
               onRefresh();
             }}
             onCancel={() => {
-              setShowPaymentForm(false);
-              setSelectedTreatmentRecord(null);
+              setShowNewCycleForm(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const renderUpdateContractForm = () => {
+    if (!showUpdateContractForm) return null;
+
+    return (
+      <Dialog
+        open={showUpdateContractForm}
+        onOpenChange={setShowUpdateContractForm}
+      >
+        <DialogContent
+          className="max-w-3xl"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <Edit size={20} />
+              Update Contract Details
+            </DialogTitle>
+            <p className="text-gray-500 text-sm mt-1">
+              Update the contract price or duration for this patient's current
+              treatment cycle.
+            </p>
+          </DialogHeader>
+          <UpdateContractForm
+            patientId={patient.info.patient_id!}
+            patient={patient.info as OrthodonticPatient}
+            onSuccess={() => {
+              setShowUpdateContractForm(false);
+              onRefresh();
+            }}
+            onCancel={() => {
+              setShowUpdateContractForm(false);
             }}
           />
         </DialogContent>
@@ -1653,9 +2236,7 @@ const PatientDetailsModal = ({
                 Add Treatment Record
               </Button>
             </div>
-            <ScrollArea className="max-h-[60vh] pr-4">
-              {renderTreatmentRecords()}
-            </ScrollArea>
+            {renderTreatmentRecords()}
           </TabsContent>
           {type === "Regular" && (
             <TabsContent value="payments">
@@ -1683,7 +2264,7 @@ const PatientDetailsModal = ({
               Export to PDF
             </Button>
             <Button
-              className="bg-[#c84e67] text-white hover:bg-[#c84e66e5]"
+              className="bg-[#1e1e1e] text-white hover:bg-[#1e1e1ee6] hover:text-white"
               onClick={onClose}
             >
               Close
@@ -1695,6 +2276,8 @@ const PatientDetailsModal = ({
       {renderEditForm()}
       {renderMedicalHistoryEditForm()}
       {renderPaymentForm()}
+      {renderNewCycleForm()}
+      {renderUpdateContractForm()}
       <ConfirmationDialog
         isOpen={showDeleteConfirmation}
         onClose={() => setShowDeleteConfirmation(false)}

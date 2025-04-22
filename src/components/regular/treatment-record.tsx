@@ -320,7 +320,7 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
               type="button"
               variant="outline"
               onClick={onBack}
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6"
+              className="border-gray-300 bg-[#1e1e1e] text-white hover:bg-[#1e1e1eed] hover:text-white px-6"
             >
               Back
             </Button>

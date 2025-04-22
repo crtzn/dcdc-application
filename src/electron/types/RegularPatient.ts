@@ -54,8 +54,9 @@ export interface RegularTreatmentRecord {
 // types/PaymentHistory.ts
 export interface PaymentHistory {
   payment_id?: number; // Auto-incremented
-  patient_id: number; // Foreign key to regular_patients
+  patient_id: number; // Foreign key to patient table
   treatment_record_id?: number; // Optional reference to the treatment record
+  patient_type: "Regular" | "Ortho"; // Type of patient
   payment_date: string;
   amount_paid: number;
   payment_method: string;

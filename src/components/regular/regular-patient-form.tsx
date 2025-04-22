@@ -531,7 +531,7 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({
           <Button
             type="submit"
             disabled={nameExists}
-            className={`bg-blue-600 hover:bg-blue-700 text-white rounded-md px-6 py-2 text-sm w-full sm:w-auto ${
+            className={`bg-[#1e1e1e] hover:bg-[#1e1e1ee4] text-white rounded-md px-6 py-2 text-sm w-full sm:w-auto ${
               nameExists ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >

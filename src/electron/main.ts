@@ -24,6 +24,8 @@ import {
   getPaymentHistory,
   updateTreatmentRecordBalance,
   getNextOrthoAppointmentNumber,
+  startNewOrthodonticTreatmentCycle,
+  updateOrthodonticContractDetails,
   deleteRegularPatient,
   deleteOrthodonticPatient,
 } from "./models/tstmgr.js";
@@ -306,11 +308,65 @@ ipcMain.handle("get-monthly-patient-counts", async () => {
 
 ipcMain.handle(
   "get-next-ortho-appointment-number",
-  async (_event, patientId: number) => {
+  async (_event, patientId: number, treatmentCycle?: number) => {
     try {
-      return await getNextOrthoAppointmentNumber(patientId);
+      return await getNextOrthoAppointmentNumber(patientId, treatmentCycle);
     } catch (error) {
       console.error("IPC get-next-ortho-appointment-number error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+ipcMain.handle(
+  "start-new-orthodontic-treatment-cycle",
+  async (
+    _event,
+    patientId: number,
+    contractPrice?: number,
+    contractMonths?: number
+  ) => {
+    try {
+      const result = await startNewOrthodonticTreatmentCycle(
+        patientId,
+        contractPrice,
+        contractMonths
+      );
+      if (result.success) {
+        BrowserWindow.getAllWindows().forEach((win) => {
+          win.webContents.send("patient-updated");
+        });
+      }
+      return result;
+    } catch (error) {
+      console.error("IPC start-new-orthodontic-treatment-cycle error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+ipcMain.handle(
+  "update-orthodontic-contract-details",
+  async (
+    _event,
+    patientId: number,
+    contractPrice?: number,
+    contractMonths?: number
+  ) => {
+    try {
+      const result = await updateOrthodonticContractDetails(
+        patientId,
+        contractPrice,
+        contractMonths
+      );
+      if (result.success) {
+        BrowserWindow.getAllWindows().forEach((win) => {
+          win.webContents.send("patient-updated");
+        });
+      }
+      return result;
+    } catch (error) {
+      console.error("IPC update-orthodontic-contract-details error:", error);
       return { success: false, error: String(error) };
     }
   }

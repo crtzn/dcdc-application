@@ -105,9 +105,29 @@ interface ElectronAPI {
     data?: Array<{ year: number; month: number; count: number }>;
     error?: string;
   }>;
-  getNextOrthoAppointmentNumber: (patientId: number) => Promise<{
+  getNextOrthoAppointmentNumber: (
+    patientId: number,
+    treatmentCycle?: number
+  ) => Promise<{
     success: boolean;
     next_appt_no?: number;
+    error?: string;
+  }>;
+  startNewOrthodonticTreatmentCycle: (
+    patientId: number,
+    contractPrice?: number,
+    contractMonths?: number
+  ) => Promise<{
+    success: boolean;
+    new_cycle?: number;
+    error?: string;
+  }>;
+  updateOrthodonticContractDetails: (
+    patientId: number,
+    contractPrice?: number,
+    contractMonths?: number
+  ) => Promise<{
+    success: boolean;
     error?: string;
   }>;
   onPatientUpdated: (callback: () => void) => () => void;

@@ -21,17 +21,26 @@ export interface OrthodonticPatient {
   tmj_problems: "Yes" | "No";
   oral_hygiene: "Excellent" | "Fair" | "Poor";
   gingival_tissues: "Thick" | "Thin" | "Normal" | "Receding";
+  treatment_status?: "Not Started" | "In Progress" | "Completed";
+  current_contract_price?: number;
+  current_contract_months?: number;
+  current_balance?: number;
+  treatment_cycle?: number;
   created_at?: string;
 }
 
 export interface OrthodonticTreatmentRecord {
   record_id?: number;
   patient_id: number;
+  treatment_cycle?: number;
   appt_no: string;
   date: string;
   arch_wire?: string;
   procedure?: string;
+  contract_price?: number;
+  contract_months?: number;
   amount_paid?: number;
   next_schedule?: string;
   mode_of_payment?: string;
+  balance?: number;
 }

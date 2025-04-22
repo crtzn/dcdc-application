@@ -73,8 +73,34 @@ electron.contextBridge.exposeInMainWorld("api", {
   ) => ipcRenderer.invoke("update-medical-history", history_id, history),
   getMonthlyPatientCounts: () =>
     ipcRenderer.invoke("get-monthly-patient-counts"),
-  getNextOrthoAppointmentNumber: (patientId: number) =>
-    ipcRenderer.invoke("get-next-ortho-appointment-number", patientId),
+  getNextOrthoAppointmentNumber: (patientId: number, treatmentCycle?: number) =>
+    ipcRenderer.invoke(
+      "get-next-ortho-appointment-number",
+      patientId,
+      treatmentCycle
+    ),
+  startNewOrthodonticTreatmentCycle: (
+    patientId: number,
+    contractPrice?: number,
+    contractMonths?: number
+  ) =>
+    ipcRenderer.invoke(
+      "start-new-orthodontic-treatment-cycle",
+      patientId,
+      contractPrice,
+      contractMonths
+    ),
+  updateOrthodonticContractDetails: (
+    patientId: number,
+    contractPrice?: number,
+    contractMonths?: number
+  ) =>
+    ipcRenderer.invoke(
+      "update-orthodontic-contract-details",
+      patientId,
+      contractPrice,
+      contractMonths
+    ),
   onPatientUpdated: (callback: () => void) => {
     ipcRenderer.on("patient-updated", callback);
     return () => ipcRenderer.removeListener("patient-updated", callback);
