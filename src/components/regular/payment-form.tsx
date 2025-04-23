@@ -69,10 +69,10 @@ const PaymentForm = ({
   // Update remaining balance when amount paid changes
   const watchAmountPaid = form.watch("amount_paid");
   const currentBalance = treatmentRecord?.balance || 0;
-  
+
   // Calculate remaining balance
   const remainingBalance = Math.max(0, currentBalance - (watchAmountPaid || 0));
-  
+
   // Update the remaining balance field
   if (form.getValues("remaining_balance") !== remainingBalance) {
     form.setValue("remaining_balance", remainingBalance);
@@ -81,11 +81,12 @@ const PaymentForm = ({
   const handleSubmit = async (data: PaymentFormValues) => {
     try {
       setIsSubmitting(true);
-      
+
       // Add payment history
       const paymentResult = await window.api.addPaymentHistory({
         patient_id: patientId,
         treatment_record_id: treatmentRecord?.record_id,
+        patient_type: "Regular", // Specify patient type as Regular
         payment_date: data.payment_date,
         amount_paid: data.amount_paid,
         payment_method: data.payment_method,
@@ -112,7 +113,8 @@ const PaymentForm = ({
       toast.success("Payment recorded successfully");
       onSuccess();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       toast.error(`Error recording payment: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
@@ -176,9 +178,15 @@ const PaymentForm = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div className="mb-2 text-gray-700 font-medium">Current Balance</div>
+            <div className="mb-2 text-gray-700 font-medium">
+              Current Balance
+            </div>
             <div className="p-3 bg-gray-100 rounded-md text-lg font-semibold text-red-600">
-              ₱{currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ₱
+              {currentBalance.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </div>
           </div>
 
@@ -196,7 +204,9 @@ const PaymentForm = ({
                     step="0.01"
                     className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      field.onChange(parseFloat(e.target.value) || 0)
+                    }
                   />
                 </FormControl>
                 <FormMessage className="text-red-500 text-xs" />
@@ -207,9 +217,15 @@ const PaymentForm = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div className="mb-2 text-gray-700 font-medium">Remaining Balance</div>
+            <div className="mb-2 text-gray-700 font-medium">
+              Remaining Balance
+            </div>
             <div className="p-3 bg-gray-100 rounded-md text-lg font-semibold text-blue-600">
-              ₱{remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ₱
+              {remainingBalance.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </div>
           </div>
         </div>
