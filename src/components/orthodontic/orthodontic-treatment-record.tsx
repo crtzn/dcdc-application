@@ -1,5 +1,6 @@
 // src/components/orthodontic/orthodontic-treatment-record.tsx
 import React, { useEffect, useState } from "react";
+import { usePopoverClose } from "@/hooks/usePopoverClose";
 import {
   Card,
   CardContent,
@@ -79,6 +80,10 @@ const OrthodonticTreatmentRecordForm: React.FC<
   const [nextScheduleDate, setNextScheduleDate] = useState<Date | undefined>(
     undefined
   );
+
+  // Popover states for calendar controls
+  const treatmentDatePopover = usePopoverClose();
+  const nextSchedulePopover = usePopoverClose();
 
   const form = useForm<TreatmentFormValues>({
     resolver: zodResolver(treatmentSchema),
@@ -216,7 +221,10 @@ const OrthodonticTreatmentRecordForm: React.FC<
                       <FormLabel className="text-gray-700 font-medium">
                         Treatment Date <span className="text-red-500">*</span>
                       </FormLabel>
-                      <Popover>
+                      <Popover
+                        open={treatmentDatePopover.open}
+                        onOpenChange={treatmentDatePopover.onOpenChange}
+                      >
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
@@ -250,6 +258,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                                 field.onChange(
                                   date.toISOString().split("T")[0]
                                 );
+                                treatmentDatePopover.onSelect()(); // Close popover after selection
                               }
                             }}
                             disabled={(date) =>
@@ -437,7 +446,10 @@ const OrthodonticTreatmentRecordForm: React.FC<
                       <FormLabel className="text-gray-700 font-medium">
                         Next Schedule
                       </FormLabel>
-                      <Popover>
+                      <Popover
+                        open={nextSchedulePopover.open}
+                        onOpenChange={nextSchedulePopover.onOpenChange}
+                      >
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
@@ -471,6 +483,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                                 field.onChange(
                                   date.toISOString().split("T")[0]
                                 );
+                                nextSchedulePopover.onSelect()(); // Close popover after selection
                               }
                             }}
                             disabled={(date) => date < new Date("1900-01-01")}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { usePopoverClose } from "@/hooks/usePopoverClose";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -84,6 +85,10 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
   const [date, setDate] = useState<Date | undefined>(
     initialData.birthday ? new Date(initialData.birthday) : undefined
   );
+
+  // Popover states for calendar controls
+  const birthdayPopover = usePopoverClose();
+  const registrationPopover = usePopoverClose();
 
   // Create a date at noon to avoid timezone issues
   const today = new Date();
@@ -209,7 +214,10 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
                     Registration Date <RequiredIndicator />
                   </FormLabel>
-                  <Popover>
+                  <Popover
+                    open={registrationPopover.open}
+                    onOpenChange={registrationPopover.onOpenChange}
+                  >
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -257,6 +265,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
                             field.onChange(
                               normalizedDate.toISOString().split("T")[0]
                             );
+                            registrationPopover.onSelect()(); // Close popover after selection
                           }
                         }}
                         disabled={(date) =>
@@ -362,7 +371,10 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
                     Date of Birth
                   </FormLabel>
-                  <Popover>
+                  <Popover
+                    open={birthdayPopover.open}
+                    onOpenChange={birthdayPopover.onOpenChange}
+                  >
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -405,7 +417,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
                               )
                             );
                             setDate(normalizedDate); // Update the date state
-                            console.log("Selected Date:", normalizedDate); // Debug to confirm selection
+                            birthdayPopover.onSelect()(); // Close popover after selection
                           }
                         }}
                         disabled={(date) =>

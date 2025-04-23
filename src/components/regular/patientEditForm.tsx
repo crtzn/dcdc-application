@@ -154,8 +154,6 @@ const RegularPatientEditForm = ({
           id="registration_date"
           type="date"
           {...register("registration_date")}
-          disabled
-          className="bg-gray-100"
         />
       </div>
       {patient.created_at && (

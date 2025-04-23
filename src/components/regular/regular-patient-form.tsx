@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { usePopoverClose } from "@/hooks/usePopoverClose";
 import { CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,6 +77,10 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({
   const [date, setDate] = useState<Date | undefined>(
     initialData.birthday ? new Date(initialData.birthday) : undefined
   );
+
+  // Popover states for calendar controls
+  const birthdayPopover = usePopoverClose();
+  const registrationPopover = usePopoverClose();
 
   // Create a date at noon to avoid timezone issues
   const today = new Date();
@@ -230,7 +235,10 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({
                     <FormLabel className="text-sm font-medium text-gray-700 mb-1">
                       Date of Birth <RequiredIndicator />
                     </FormLabel>
-                    <Popover>
+                    <Popover
+                      open={birthdayPopover.open}
+                      onOpenChange={birthdayPopover.onOpenChange}
+                    >
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -273,7 +281,7 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({
                                 )
                               );
                               setDate(normalizedDate); // Update the date state
-                              console.log("Selected Date:", normalizedDate); // Debug to confirm selection
+                              birthdayPopover.onSelect()(); // Close popover after selection
                             }
                           }}
                           disabled={(date) =>
@@ -486,21 +494,101 @@ const RegularPatientForm: React.FC<RegularPatientFormProps> = ({
                     <FormLabel className="text-sm font-medium text-gray-700">
                       Registration Date <RequiredIndicator />
                     </FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type="text"
-                          className="border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 text-sm pr-10"
-                          value={
-                            field.value
-                              ? format(new Date(field.value), "MM/dd/yyyy")
-                              : ""
+                    <Popover
+                      open={registrationPopover.open}
+                      onOpenChange={registrationPopover.onOpenChange}
+                    >
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal h-10 border-gray-300 rounded-md text-sm",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), "MM/dd/yyyy")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarDays className="ml-auto h-4 w-4 text-black" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto p-0 bg-white shadow-lg rounded-md"
+                        align="start"
+                        side="bottom"
+                        avoidCollisions
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={
+                            field.value ? new Date(field.value) : undefined
                           }
-                          disabled
+                          onSelect={(selectedDate) => {
+                            if (selectedDate) {
+                              // Create a date at noon to avoid timezone issues
+                              const normalizedDate = new Date(
+                                Date.UTC(
+                                  selectedDate.getFullYear(),
+                                  selectedDate.getMonth(),
+                                  selectedDate.getDate(),
+                                  12,
+                                  0,
+                                  0,
+                                  0
+                                )
+                              );
+                              // Format the date as YYYY-MM-DD for the form field
+                              field.onChange(
+                                normalizedDate.toISOString().split("T")[0]
+                              );
+                              registrationPopover.onSelect()(); // Close popover after selection
+                            }
+                          }}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                          captionLayout="dropdown-buttons"
+                          fromYear={1900}
+                          toYear={new Date().getFullYear()}
+                          className="p-3 rounded-md border border-gray-200"
+                          classNames={{
+                            months:
+                              "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                            month: "space-y-4",
+                            caption:
+                              "flex justify-center pt-1 relative items-center",
+                            caption_label: "text-sm font-medium hidden",
+                            caption_dropdowns: "flex justify-center space-x-2",
+                            dropdown_month: "relative",
+                            dropdown_year: "relative",
+                            dropdown:
+                              "border border-gray-300 rounded-md bg-white text-sm p-1 focus:ring-2 focus:ring-blue-500",
+                            nav: "flex items-center",
+                            nav_button: "hidden",
+                            nav_button_previous: "hidden",
+                            nav_button_next: "hidden",
+                            table: "w-full border-collapse space-y-1",
+                            head_row: "flex w-full mb-2",
+                            head_cell:
+                              "text-gray-600 w-10 h-10 flex items-center justify-center font-normal text-sm",
+                            row: "flex w-full space-x-1",
+                            cell: "w-10 h-10 flex items-center justify-center",
+                            day: "w-10 h-10 flex items-center justify-center font-normal text-sm rounded-md hover:bg-gray-200 focus:bg-gray-200 focus:outline-none cursor-pointer",
+                            day_selected:
+                              "bg-blue-600 text-white rounded-md font-medium",
+                            day_today:
+                              "border border-blue-500 text-blue-600 rounded-md",
+                            day_disabled:
+                              "text-gray-400 opacity-50 cursor-not-allowed",
+                          }}
                         />
-                        <CalendarDays className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-black" />
-                      </div>
-                    </FormControl>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage className="text-red-500 text-xs" />
                   </FormItem>
                 )}
