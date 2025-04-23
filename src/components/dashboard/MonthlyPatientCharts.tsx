@@ -40,7 +40,9 @@ const MonthlyPatientsChart: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<string>(
     new Date().getFullYear().toString()
   ); // Default to current year
-  const [availableYears, setAvailableYears] = useState<string[]>([]);
+  const [availableYears, setAvailableYears] = useState<string[]>([
+    new Date().getFullYear().toString(),
+  ]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,25 +53,59 @@ const MonthlyPatientsChart: React.FC = () => {
     (currentYear - i).toString()
   ); // e.g., ["2025", "2024", ..., "2000"]
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const result = await window.api.getMonthlyPatientCounts();
-        if (result.success && result.data) {
-          setData(result.data);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const result = await window.api.getMonthlyPatientCounts();
+      if (result.success && result.data) {
+        setData(result.data);
+        // Make sure we always have at least the current year in availableYears
+        if (allYears.length > 0) {
           setAvailableYears(allYears); // Use all years, not just those with data
-        } else {
-          setError(result.error || "Failed to fetch monthly patient counts");
         }
-      } catch (err) {
-        setError("Error fetching data");
-        console.error(err);
-      } finally {
-        setLoading(false);
+      } else {
+        setError(result.error || "Failed to fetch monthly patient counts");
       }
-    };
+    } catch (err) {
+      setError("Error fetching data");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    // Fetch data on initial load
     fetchData();
+
+    // Set up event listeners for patient added/updated/deleted events
+    const unsubscribeAdded = window.api.onPatientAdded(() => {
+      console.log(
+        "Patient added event received, refetching monthly chart data"
+      );
+      fetchData();
+    });
+
+    const unsubscribeUpdated = window.api.onPatientUpdated(() => {
+      console.log(
+        "Patient updated event received, refetching monthly chart data"
+      );
+      fetchData();
+    });
+
+    const unsubscribeDeleted = window.api.onPatientDeleted(() => {
+      console.log(
+        "Patient deleted event received, refetching monthly chart data"
+      );
+      fetchData();
+    });
+
+    // Clean up event listeners on unmount
+    return () => {
+      unsubscribeAdded();
+      unsubscribeUpdated();
+      unsubscribeDeleted();
+    };
   }, []);
 
   // Filter data by selected year
@@ -155,16 +191,25 @@ const MonthlyPatientsChart: React.FC = () => {
           <CardTitle className="text-[#1e1e1e]">
             Monthly Patient Trends
           </CardTitle>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
+          <Select
+            value={selectedYear || new Date().getFullYear().toString()}
+            onValueChange={setSelectedYear}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select Year" />
             </SelectTrigger>
             <SelectContent>
-              {availableYears.map((year) => (
-                <SelectItem key={year} value={year}>
-                  {year}
+              {availableYears.length > 0 ? (
+                availableYears.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value={new Date().getFullYear().toString()}>
+                  {new Date().getFullYear()}
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
         </CardHeader>
@@ -181,16 +226,25 @@ const MonthlyPatientsChart: React.FC = () => {
     <Card className="shadow-lg">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-[#1e1e1e]">Monthly Patient Trends</CardTitle>
-        <Select value={selectedYear} onValueChange={setSelectedYear}>
+        <Select
+          value={selectedYear || new Date().getFullYear().toString()}
+          onValueChange={setSelectedYear}
+        >
           <SelectTrigger className="w-[120px]">
             <SelectValue placeholder="Select Year" />
           </SelectTrigger>
           <SelectContent>
-            {availableYears.map((year) => (
-              <SelectItem key={year} value={year}>
-                {year}
+            {availableYears.length > 0 ? (
+              availableYears.map((year) => (
+                <SelectItem key={year} value={year}>
+                  {year}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value={new Date().getFullYear().toString()}>
+                {new Date().getFullYear()}
               </SelectItem>
-            ))}
+            )}
           </SelectContent>
         </Select>
       </CardHeader>
