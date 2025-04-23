@@ -14,7 +14,24 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { usePopoverClose } from "@/hooks/usePopoverClose";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const newCycleSchema = z.object({
   contract_price: z
@@ -25,6 +42,13 @@ const newCycleSchema = z.object({
     .number()
     .min(1, "Contract months must be at least 1")
     .optional(),
+  treatment_date: z.string().min(1, "Treatment date is required"),
+  arch_wire: z.string().min(1, "Arch wire is required"),
+  procedure: z.string().optional(),
+  appliances: z.string().optional(),
+  amount_paid: z.number().min(0, "Amount paid must be positive").optional(),
+  mode_of_payment: z.string().default("Cash"),
+  next_schedule: z.string().optional(),
 });
 
 type NewCycleFormValues = z.infer<typeof newCycleSchema>;
@@ -41,14 +65,73 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
   onCancel,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [treatmentDate, setTreatmentDate] = useState<Date | undefined>(
+    new Date()
+  );
+  const [nextScheduleDate, setNextScheduleDate] = useState<Date | undefined>(
+    undefined
+  );
+  const [showOtherInput, setShowOtherInput] = useState(false);
+  const [otherValue, setOtherValue] = useState("");
+
+  // Popover states for calendar controls
+  const treatmentDatePopover = usePopoverClose();
+  const nextSchedulePopover = usePopoverClose();
 
   const form = useForm<NewCycleFormValues>({
     resolver: zodResolver(newCycleSchema),
     defaultValues: {
       contract_price: undefined,
       contract_months: undefined,
+      treatment_date: new Date().toISOString().split("T")[0],
+      arch_wire: "",
+      procedure: "",
+      appliances: "",
+      amount_paid: 0,
+      mode_of_payment: "Cash",
+      next_schedule: "",
     },
   });
+
+  // Update form when treatment date changes
+  React.useEffect(() => {
+    if (treatmentDate) {
+      form.setValue(
+        "treatment_date",
+        treatmentDate.toISOString().split("T")[0]
+      );
+    }
+  }, [treatmentDate, form]);
+
+  // Update form when next schedule date changes
+  React.useEffect(() => {
+    if (nextScheduleDate) {
+      form.setValue(
+        "next_schedule",
+        nextScheduleDate.toISOString().split("T")[0]
+      );
+    }
+  }, [nextScheduleDate, form]);
+
+  // Handle appliance selection
+  const handleApplianceChange = (value: string) => {
+    if (value === "Other") {
+      setShowOtherInput(true);
+      form.setValue("appliances", otherValue);
+    } else {
+      setShowOtherInput(false);
+      form.setValue("appliances", value);
+    }
+  };
+
+  // Handle other appliance input
+  const handleOtherApplianceChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = e.target.value;
+    setOtherValue(value);
+    form.setValue("appliances", value);
+  };
 
   const handleSubmit = async (data: NewCycleFormValues) => {
     try {
@@ -57,7 +140,14 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
       const result = await window.api.startNewOrthodonticTreatmentCycle(
         patientId,
         data.contract_price,
-        data.contract_months
+        data.contract_months,
+        data.treatment_date,
+        data.arch_wire,
+        data.procedure,
+        data.appliances,
+        data.amount_paid,
+        data.mode_of_payment,
+        data.next_schedule
       );
 
       if (!result.success) {
@@ -67,7 +157,11 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
       toast.success(
         `New treatment cycle started successfully (Cycle #${result.new_cycle})`
       );
-      onSuccess();
+
+      // Add a small delay before refreshing to ensure the database transaction is complete
+      setTimeout(() => {
+        onSuccess();
+      }, 500);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -82,59 +176,318 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="space-y-4">
-            <FormField
-              control={form.control}
-              name="contract_price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-700 font-medium">
-                    New Contract Price
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="Enter contract price"
-                      className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      {...field}
-                      onChange={(e) =>
-                        field.onChange(parseFloat(e.target.value) || undefined)
-                      }
-                    />
-                  </FormControl>
-                  <FormDescription className="text-xs text-gray-500">
-                    Total price for the new treatment plan
-                  </FormDescription>
-                  <FormMessage className="text-red-500 text-xs" />
-                </FormItem>
-              )}
-            />
+            <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+              Contract Details
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="contract_price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700 font-medium">
+                      New Contract Price <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Enter contract price"
+                        className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(
+                            parseFloat(e.target.value) || undefined
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs text-gray-500">
+                      Total price for the new treatment plan
+                    </FormDescription>
+                    <FormMessage className="text-red-500 text-xs" />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="contract_months"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-700 font-medium">
-                    New Contract Duration (Months)
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="Enter duration in months"
-                      className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      {...field}
-                      onChange={(e) =>
-                        field.onChange(parseInt(e.target.value) || undefined)
-                      }
-                    />
-                  </FormControl>
-                  <FormDescription className="text-xs text-gray-500">
-                    Expected duration of the new treatment in months
-                  </FormDescription>
-                  <FormMessage className="text-red-500 text-xs" />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="contract_months"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700 font-medium">
+                      New Contract Duration (Months){" "}
+                      <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Enter duration in months"
+                        className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value) || undefined)
+                        }
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs text-gray-500">
+                      Expected duration of the new treatment in months
+                    </FormDescription>
+                    <FormMessage className="text-red-500 text-xs" />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mt-6">
+              First Treatment Record
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Treatment Date */}
+              <FormField
+                control={form.control}
+                name="treatment_date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col space-y-1.5">
+                    <FormLabel className="text-gray-700 font-medium">
+                      Treatment Date <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <Popover
+                      open={treatmentDatePopover.open}
+                      onOpenChange={treatmentDatePopover.setOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className="w-full pl-3 text-left font-normal flex justify-between items-center border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          >
+                            {treatmentDate ? (
+                              format(treatmentDate, "PPP")
+                            ) : (
+                              <span className="text-gray-400">Pick a date</span>
+                            )}
+                            <CalendarIcon className="h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto p-0"
+                        align="start"
+                        side="bottom"
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={treatmentDate}
+                          onSelect={(date) => {
+                            setTreatmentDate(date);
+                            treatmentDatePopover.setOpen(false);
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage className="text-red-500 text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Arch Wire */}
+              <FormField
+                control={form.control}
+                name="arch_wire"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col space-y-1.5">
+                    <FormLabel className="text-gray-700 font-medium">
+                      Arch Wire <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter arch wire"
+                        className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Procedure */}
+              <FormField
+                control={form.control}
+                name="procedure"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col space-y-1.5">
+                    <FormLabel className="text-gray-700 font-medium">
+                      Procedure
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter procedure details"
+                        className="resize-none border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Appliances */}
+              <FormField
+                control={form.control}
+                name="appliances"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col space-y-1.5">
+                    <FormLabel className="text-gray-700 font-medium">
+                      Appliances
+                    </FormLabel>
+                    <Select
+                      onValueChange={handleApplianceChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                          <SelectValue placeholder="Select appliance" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Pads">Pads</SelectItem>
+                        <SelectItem value="Anterior Bite Plate">
+                          Anterior Bite Plate
+                        </SelectItem>
+                        <SelectItem value="Retainers">Retainers</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {showOtherInput && (
+                      <Input
+                        placeholder="Specify other appliance"
+                        value={otherValue}
+                        onChange={handleOtherApplianceChange}
+                        className="mt-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      />
+                    )}
+                    <FormMessage className="text-red-500 text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Amount Paid */}
+              <FormField
+                control={form.control}
+                name="amount_paid"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col space-y-1.5">
+                    <FormLabel className="text-gray-700 font-medium">
+                      Amount Paid
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Enter amount paid"
+                        className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(parseFloat(e.target.value) || 0)
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Mode of Payment */}
+              <FormField
+                control={form.control}
+                name="mode_of_payment"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col space-y-1.5">
+                    <FormLabel className="text-gray-700 font-medium">
+                      Mode of Payment
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                          <SelectValue placeholder="Select payment mode" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Cash">Cash</SelectItem>
+                        <SelectItem value="Credit Card">Credit Card</SelectItem>
+                        <SelectItem value="Debit Card">Debit Card</SelectItem>
+                        <SelectItem value="Bank Transfer">
+                          Bank Transfer
+                        </SelectItem>
+                        <SelectItem value="GCash">GCash</SelectItem>
+                        <SelectItem value="Maya">Maya</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-red-500 text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Next Schedule */}
+              <FormField
+                control={form.control}
+                name="next_schedule"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col space-y-1.5">
+                    <FormLabel className="text-gray-700 font-medium">
+                      Next Schedule
+                    </FormLabel>
+                    <Popover
+                      open={nextSchedulePopover.open}
+                      onOpenChange={nextSchedulePopover.setOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className="w-full pl-3 text-left font-normal flex justify-between items-center border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          >
+                            {nextScheduleDate ? (
+                              format(nextScheduleDate, "PPP")
+                            ) : (
+                              <span className="text-gray-400">Pick a date</span>
+                            )}
+                            <CalendarIcon className="h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto p-0"
+                        align="start"
+                        side="bottom"
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={nextScheduleDate}
+                          onSelect={(date) => {
+                            setNextScheduleDate(date);
+                            nextSchedulePopover.setOpen(false);
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage className="text-red-500 text-xs" />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+
+          <div className="text-xs text-gray-500 mt-2 px-2">
+            <p>
+              Fields marked with <span className="text-red-500">*</span> are
+              required
+            </p>
           </div>
 
           <div className="flex justify-end space-x-4 sticky bottom-0 bg-white z-10 border-t border-gray-200 py-4 px-2 mt-6 shadow-sm">

@@ -116,10 +116,18 @@ interface ElectronAPI {
   startNewOrthodonticTreatmentCycle: (
     patientId: number,
     contractPrice?: number,
-    contractMonths?: number
+    contractMonths?: number,
+    treatmentDate?: string,
+    archWire?: string,
+    procedure?: string,
+    appliances?: string,
+    amountPaid?: number,
+    modeOfPayment?: string,
+    nextSchedule?: string
   ) => Promise<{
     success: boolean;
     new_cycle?: number;
+    record_id?: number;
     error?: string;
   }>;
   updateOrthodonticContractDetails: (

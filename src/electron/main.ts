@@ -365,13 +365,27 @@ ipcMain.handle(
     _event,
     patientId: number,
     contractPrice?: number,
-    contractMonths?: number
+    contractMonths?: number,
+    treatmentDate?: string,
+    archWire?: string,
+    procedure?: string,
+    appliances?: string,
+    amountPaid?: number,
+    modeOfPayment?: string,
+    nextSchedule?: string
   ) => {
     try {
       const result = await startNewOrthodonticTreatmentCycle(
         patientId,
         contractPrice,
-        contractMonths
+        contractMonths,
+        treatmentDate,
+        archWire,
+        procedure,
+        appliances,
+        amountPaid,
+        modeOfPayment,
+        nextSchedule
       );
       if (result.success) {
         BrowserWindow.getAllWindows().forEach((win) => {

@@ -1204,10 +1204,18 @@ export function getNextOrthoAppointmentNumber(
 export function startNewOrthodonticTreatmentCycle(
   patientId: number,
   contractPrice?: number,
-  contractMonths?: number
+  contractMonths?: number,
+  treatmentDate?: string,
+  archWire?: string,
+  procedure?: string,
+  appliances?: string,
+  amountPaid?: number,
+  modeOfPayment?: string,
+  nextSchedule?: string
 ): {
   success: boolean;
   new_cycle?: number;
+  record_id?: number;
   error?: string;
 } {
   try {
@@ -1232,6 +1240,11 @@ export function startNewOrthodonticTreatmentCycle(
       // Increment the treatment cycle
       const newCycle = (cycleResult.treatment_cycle || 1) + 1;
 
+      // Calculate initial balance
+      const initialBalance = contractPrice
+        ? contractPrice - (amountPaid || 0)
+        : null;
+
       // Update the patient record
       const updatePatientStmt = db.prepare(`
         UPDATE orthodontic_patients
@@ -1247,8 +1260,32 @@ export function startNewOrthodonticTreatmentCycle(
         newCycle,
         contractPrice || null,
         contractMonths || null,
-        contractPrice || null, // Initial balance is the full contract price
+        initialBalance, // Initial balance is the contract price minus any initial payment
         patientId
+      );
+
+      // Automatically create the first treatment record (appointment #1)
+      const insertRecordStmt = db.prepare(`
+        INSERT INTO orthodontic_treatment_records (
+          patient_id, treatment_cycle, appt_no, date, arch_wire, procedure, appliances,
+          contract_price, contract_months, amount_paid, mode_of_payment, next_schedule, balance
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      const recordResult = insertRecordStmt.run(
+        patientId,
+        newCycle,
+        "1", // First appointment
+        treatmentDate || new Date().toISOString().split("T")[0], // Use provided date or current date
+        archWire || null,
+        procedure || null,
+        appliances || null,
+        contractPrice || null,
+        contractMonths || null,
+        amountPaid || null,
+        modeOfPayment || "Cash", // Default to Cash
+        nextSchedule || null,
+        initialBalance // Set the balance
       );
 
       // Commit the transaction
@@ -1257,6 +1294,7 @@ export function startNewOrthodonticTreatmentCycle(
       return {
         success: true,
         new_cycle: newCycle,
+        record_id: Number(recordResult.lastInsertRowid),
       };
     } catch (error) {
       // If any error occurs, roll back the transaction

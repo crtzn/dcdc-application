@@ -82,13 +82,27 @@ electron.contextBridge.exposeInMainWorld("api", {
   startNewOrthodonticTreatmentCycle: (
     patientId: number,
     contractPrice?: number,
-    contractMonths?: number
+    contractMonths?: number,
+    treatmentDate?: string,
+    archWire?: string,
+    procedure?: string,
+    appliances?: string,
+    amountPaid?: number,
+    modeOfPayment?: string,
+    nextSchedule?: string
   ) =>
     ipcRenderer.invoke(
       "start-new-orthodontic-treatment-cycle",
       patientId,
       contractPrice,
-      contractMonths
+      contractMonths,
+      treatmentDate,
+      archWire,
+      procedure,
+      appliances,
+      amountPaid,
+      modeOfPayment,
+      nextSchedule
     ),
   updateOrthodonticContractDetails: (
     patientId: number,
