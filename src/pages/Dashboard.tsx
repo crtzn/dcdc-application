@@ -3,7 +3,6 @@
 import { TotalPatientCount } from "@/components/dashboard/patient-count";
 import MonthlyPatientsChart from "@/components/dashboard/MonthlyPatientCharts";
 import RecentPatientsList from "@/components/dashboard/RecentPatientList";
-import BackupManager from "@/components/backup/BackupManager";
 
 function Dashboard() {
   return (
@@ -18,9 +17,6 @@ function Dashboard() {
       </div>
       <div className="header-card flex items-center justify-between mt-5">
         <TotalPatientCount />
-        <div className="flex items-center gap-4">
-          <BackupManager />
-        </div>
       </div>
       <div className="chart-and-list-section flex gap-2 w-full flex-col md:flex-row">
         <div className="lg:col-span-2 w-full">

@@ -437,7 +437,10 @@ const BackupManager = () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          className="flex items-center gap-2 bg-[#1e1e1e] text-white hover:bg-[#1e1e1eed] hover:text-white"
+        >
           <Database size={16} />
           Backup Manager
         </Button>

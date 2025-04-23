@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import PatientModal from "@/components/PatientModal";
+import BackupManager from "../backup/BackupManager";
 
 interface Patient {
   name: string;
@@ -105,7 +106,8 @@ const RecentPatientsList: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex justify-between text-lg font-semibold text-gray-800">
           Recent Patients
-          <div>
+          <div className="flex justify-between items-center gap-2">
+            <BackupManager />
             <PatientModal />
           </div>
         </CardTitle>

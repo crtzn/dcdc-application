@@ -36,7 +36,6 @@ import {
   restoreFromBackup,
   deleteBackup,
   setupAutomaticBackups,
-  checkAutomaticBackup,
   performAutomaticBackupIfDue,
   exportDatabaseToJson,
   importDatabaseFromJson,

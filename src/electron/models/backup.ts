@@ -4,7 +4,6 @@ import path from "path";
 import fs from "fs";
 import sqlite from "better-sqlite3";
 import { dbPath } from "./tstmgr.js";
-import { isDev } from "../util.js";
 
 // Define backup directory paths
 export function getBackupDirectories() {
@@ -23,11 +22,11 @@ export function getBackupDirectories() {
 }
 
 // Create a backup of the database
-export function createBackup(customPath?: string): {
+export async function createBackup(customPath?: string): Promise<{
   success: boolean;
   backupPath?: string;
   error?: string;
-} {
+}> {
   try {
     // Get the source database path
     const sourcePath = dbPath();
@@ -57,7 +56,11 @@ export function createBackup(customPath?: string): {
     const backupDb = fs.createWriteStream(backupPath);
 
     // Return a promise that resolves when the backup is complete
-    return new Promise((resolve, reject) => {
+    return new Promise<{
+      success: boolean;
+      backupPath?: string;
+      error?: string;
+    }>((resolve, reject) => {
       sourceDb.pipe(backupDb);
 
       backupDb.on("finish", () => {
@@ -351,7 +354,7 @@ export async function performAutomaticBackupIfDue(): Promise<void> {
           const backupsToDelete = listResult.backups.slice(settings.maxBackups);
 
           for (const backup of backupsToDelete) {
-            await deleteBackup(backup.path);
+            deleteBackup(backup.path);
           }
         }
       }
@@ -385,7 +388,7 @@ export function exportDatabaseToJson(outputPath?: string): {
       .all() as Array<{ name: string }>;
 
     // Create export object
-    const exportData: Record<string, any[]> = {};
+    const exportData: Record<string, unknown[]> = {};
 
     // Export each table
     for (const table of tables) {
@@ -594,7 +597,7 @@ export function importDatabaseFile(importFilePath: string): {
     try {
       const tempDb = sqlite(destPath);
       tempDb.close();
-    } catch (error) {
+    } catch {
       console.log("No active connection to close");
     }
 
