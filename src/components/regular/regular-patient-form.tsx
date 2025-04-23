@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { usePopoverClose } from "@/hooks/usePopoverClose";
 import { CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

@@ -139,22 +139,20 @@ const PatientDetailsModal = ({
     const doc = new jsPDF();
     let yOffset = 20;
     const pageWidth = 210; // A4 page width in mm
-    const margin = 20;
+    const margin = 10;
     const usableWidth = pageWidth - 2 * margin; // 170mm
 
-    // Logo dimensions (adjust based on actual logo aspect ratio)
+    // Logo dimensions (unchanged)
     const logoWidth = 30;
     const logoHeight = 30;
 
-    // Function to add header on each page
+    // Function to add header on each page (unchanged)
     const addHeader = () => {
-      // Add actual logo
-      const logoUrl = "/desktopIcon.png"; // Path relative to public folder
+      const logoUrl = "/desktopIcon.png";
       try {
         doc.addImage(logoUrl, "PNG", margin, 10, logoWidth, logoHeight);
       } catch (error) {
         console.error("Failed to load logo:", error);
-        // Fallback to placeholder
         doc.setFillColor(200, 200, 200);
         doc.rect(margin, 10, logoWidth, logoHeight, "F");
         doc.setFontSize(10);
@@ -162,7 +160,6 @@ const PatientDetailsModal = ({
         doc.text("Logo", margin + 5, 25);
       }
 
-      // Clinic Information
       doc.setFontSize(16);
       doc.setTextColor(0, 0, 0);
       doc.setFont("helvetica", "bold");
@@ -176,39 +173,36 @@ const PatientDetailsModal = ({
       );
       doc.text("Phone: 0943 586 2245", margin + logoWidth + 10, 34);
 
-      // Tagline
       doc.setFontSize(12);
       doc.setFont("helvetica", "italic");
-      doc.setTextColor(39, 118, 171); // Blue (#2776ab)
+      doc.setTextColor(39, 118, 171);
       doc.text(
         "Your teeth are treasure, making you smile is our pleasure.",
         margin + logoWidth + 10,
         41
       );
-      doc.setTextColor(0, 0, 0); // Reset text color to black
+      doc.setTextColor(0, 0, 0);
 
-      // Horizontal line
       doc.setLineWidth(0.5);
       doc.setDrawColor(39, 118, 171);
       doc.line(margin, 45, margin + usableWidth, 45);
-      doc.setDrawColor(0, 0, 0); // Reset draw color to black
-
-      yOffset = 50; // Reset yOffset after header
+      doc.setDrawColor(0, 0, 0);
+      yOffset = 50;
     };
 
-    // Function to check if a new page is needed
+    // Function to check if a new page is needed (unchanged)
     const checkPage = () => {
       if (yOffset > 250) {
         doc.addPage();
         addHeader();
-        yOffset = 50; // Reset yOffset after header
+        yOffset = 50;
       }
     };
 
     // Add header to first page
     addHeader();
 
-    // Title
+    // Title (unchanged)
     doc.setFontSize(18);
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "bold");
@@ -219,12 +213,12 @@ const PatientDetailsModal = ({
     );
     yOffset += 10;
 
-    // Patient Info Section
+    // Patient Info Section (unchanged)
     doc.setFontSize(14);
     doc.setTextColor(39, 118, 171);
     doc.setFont("helvetica", "bold");
     doc.text("Patient Information", margin, yOffset);
-    doc.setTextColor(0, 0, 0); // Reset text color to black
+    doc.setTextColor(0, 0, 0);
     yOffset += 8;
 
     const patientFields =
@@ -291,12 +285,12 @@ const PatientDetailsModal = ({
         ]
       );
       doc.text(`${label}:`, margin, yOffset);
-      doc.text(value, margin + 60, yOffset); // Align values
+      doc.text(value, margin + 60, yOffset);
       yOffset += 8;
     });
     yOffset += 10;
 
-    // Medical History Section (Regular Patients Only)
+    // Medical History Section (unchanged)
     if (
       type === "Regular" &&
       patient.medicalHistory &&
@@ -307,7 +301,7 @@ const PatientDetailsModal = ({
       doc.setTextColor(39, 118, 171);
       doc.setFont("helvetica", "bold");
       doc.text("Medical History", margin, yOffset);
-      doc.setTextColor(0, 0, 0); // Reset text color to black
+      doc.setTextColor(0, 0, 0);
       yOffset += 8;
 
       patient.medicalHistory.forEach((history) => {
@@ -352,7 +346,7 @@ const PatientDetailsModal = ({
         historyFields.forEach(({ label, value }) => {
           checkPage();
           doc.text(`${label}:`, margin + 5, yOffset);
-          doc.text(formatValue(value), margin + 45, yOffset); // Align values
+          doc.text(formatValue(value), margin + 45, yOffset);
           yOffset += 8;
         });
         yOffset += 5;
@@ -363,7 +357,7 @@ const PatientDetailsModal = ({
       doc.setTextColor(39, 118, 171);
       doc.setFont("helvetica", "bold");
       doc.text("Medical History", margin, yOffset);
-      doc.setTextColor(0, 0, 0); // Reset text color to black
+      doc.setTextColor(0, 0, 0);
       yOffset += 8;
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
@@ -378,30 +372,26 @@ const PatientDetailsModal = ({
       doc.setTextColor(39, 118, 171);
       doc.setFont("helvetica", "bold");
       doc.text("Treatment Records", margin, yOffset);
-      doc.setTextColor(0, 0, 0); // Reset text color to black
+      doc.setTextColor(0, 0, 0);
       yOffset += 8;
 
-      // Add Payment History Section for Regular patients
+      // Add Payment History Section for Regular patients (unchanged)
       if (type === "Regular") {
-        // Check if we have payment history from the dedicated table
         if (patient.paymentHistory && patient.paymentHistory.length > 0) {
-          // Calculate total payments
           const totalPaid = patient.paymentHistory.reduce(
             (sum: number, payment: PaymentHistory) => sum + payment.amount_paid,
             0
           );
 
-          // Add Payment History heading
           checkPage();
           yOffset += 10;
           doc.setFontSize(14);
           doc.setTextColor(39, 118, 171);
           doc.setFont("helvetica", "bold");
           doc.text("Payment History", margin, yOffset);
-          doc.setTextColor(0, 0, 0); // Reset text color to black
+          doc.setTextColor(0, 0, 0);
           yOffset += 8;
 
-          // Add Payment Summary
           doc.setFontSize(10);
           doc.setFont("helvetica", "normal");
           doc.text(
@@ -420,7 +410,6 @@ const PatientDetailsModal = ({
           );
           yOffset += 10;
 
-          // Draw Payment History Table
           checkPage();
           const paymentHeaders = [
             "Date",
@@ -429,11 +418,9 @@ const PatientDetailsModal = ({
             "Balance",
             "Notes",
           ];
-          // Adjust column widths to prevent overcrowding
           const paymentColumnWidths = [25, 35, 25, 35, 50];
           const paymentData = patient.paymentHistory.map(
             (payment: PaymentHistory) => {
-              // Format date to save space (MM/DD/YY)
               const dateObj = new Date(payment.payment_date);
               const formattedDate = `${(dateObj.getMonth() + 1)
                 .toString()
@@ -461,22 +448,20 @@ const PatientDetailsModal = ({
             }
           );
 
-          // Draw Headers
-          doc.setFontSize(9); // Slightly smaller font for headers
+          doc.setFontSize(9);
           doc.setTextColor(255, 255, 255);
           doc.setFillColor(39, 118, 171);
           doc.rect(margin, yOffset - 5, usableWidth, 10, "F");
           let xOffset = margin;
           paymentHeaders.forEach((header, index) => {
-            doc.text(header, xOffset + 3, yOffset); // Add 3mm padding for text
+            doc.text(header, xOffset + 3, yOffset);
             xOffset += paymentColumnWidths[index];
           });
           yOffset += 8;
 
-          // Draw Data Rows
           doc.setTextColor(0, 0, 0);
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(8); // Smaller font for data to prevent overlap
+          doc.setFontSize(8);
           paymentData.forEach((row, rowIndex) => {
             checkPage();
             xOffset = margin;
@@ -489,8 +474,8 @@ const PatientDetailsModal = ({
               const wrappedText = doc.splitTextToSize(
                 cell,
                 paymentColumnWidths[index] - 6
-              ); // Reduce width for better spacing
-              doc.text(wrappedText, xOffset + 3, yOffset); // Add 3mm padding for text
+              );
+              doc.text(wrappedText, xOffset + 3, yOffset);
               const cellHeight = wrappedText.length * 5;
               maxHeight = Math.max(maxHeight, cellHeight);
               xOffset += paymentColumnWidths[index];
@@ -498,28 +483,25 @@ const PatientDetailsModal = ({
             yOffset += maxHeight + 2;
           });
 
-          yOffset += 10; // Add some space after the payment history table
+          yOffset += 10;
         } else {
-          // If no payment history from dedicated table, use treatment records as before
           const paymentRecords = (
             patient.treatmentRecords as RegularTreatmentRecord[]
           ).filter((record) => record.amount_paid && record.amount_paid > 0);
 
           if (paymentRecords.length > 0) {
-            // Calculate total payments
             const totalPaid = paymentRecords.reduce(
               (sum, record) => sum + (record.amount_paid || 0),
               0
             );
 
-            // Add Payment Summary
             checkPage();
             yOffset += 10;
             doc.setFontSize(14);
             doc.setTextColor(39, 118, 171);
             doc.setFont("helvetica", "bold");
             doc.text("Payment Summary", margin, yOffset);
-            doc.setTextColor(0, 0, 0); // Reset text color to black
+            doc.setTextColor(0, 0, 0);
             yOffset += 8;
 
             doc.setFontSize(10);
@@ -557,7 +539,6 @@ const PatientDetailsModal = ({
         const columnWidths = [25, 15, 30, 25, 25, 25, 25, 30];
         const data = (patient.treatmentRecords as RegularTreatmentRecord[]).map(
           (record) => {
-            // Format date to save space (MM/DD/YY)
             const dateObj = new Date(record.treatment_date);
             const formattedDate = `${(dateObj.getMonth() + 1)
               .toString()
@@ -597,22 +578,20 @@ const PatientDetailsModal = ({
           }
         );
 
-        // Draw Headers
-        doc.setFontSize(9); // Slightly smaller font for headers
+        doc.setFontSize(9);
         doc.setTextColor(255, 255, 255);
         doc.setFillColor(39, 118, 171);
         doc.rect(margin, yOffset - 5, usableWidth, 10, "F");
         let xOffset = margin;
         headers.forEach((header, index) => {
-          doc.text(header, xOffset + 3, yOffset); // Add 3mm padding for text
+          doc.text(header, xOffset + 3, yOffset);
           xOffset += columnWidths[index];
         });
         yOffset += 8;
 
-        // Draw Data Rows
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(8); // Smaller font for data to prevent overlap
+        doc.setFontSize(8);
         data.forEach((row, rowIndex) => {
           checkPage();
           xOffset = margin;
@@ -625,8 +604,8 @@ const PatientDetailsModal = ({
             const wrappedText = doc.splitTextToSize(
               cell,
               columnWidths[index] - 6
-            ); // Reduce width for better spacing
-            doc.text(wrappedText, xOffset + 3, yOffset); // Add 3mm padding for text
+            );
+            doc.text(wrappedText, xOffset + 3, yOffset);
             const cellHeight = wrappedText.length * 5;
             maxHeight = Math.max(maxHeight, cellHeight);
             xOffset += columnWidths[index];
@@ -634,11 +613,9 @@ const PatientDetailsModal = ({
           yOffset += maxHeight + 2;
         });
       } else {
-        // For orthodontic patients, organize records by cycle
+        // Orthodontic Treatment Records (Updated Section)
         const records =
           patient.treatmentRecords as OrthodonticTreatmentRecord[];
-
-        // Group records by cycle
         const recordsByCycle: { [key: string]: OrthodonticTreatmentRecord[] } =
           {};
         records.forEach((record) => {
@@ -649,72 +626,49 @@ const PatientDetailsModal = ({
           recordsByCycle[cycle].push(record);
         });
 
-        // Sort cycles
         const sortedCycles = Object.keys(recordsByCycle)
           .map(Number)
           .sort((a, b) => a - b);
 
-        // Process each cycle
         sortedCycles.forEach((cycle, index) => {
-          // Add extra space before cycles after the first one
           if (index > 0) {
             yOffset += 10;
           }
 
-          // Check if we need a new page
           checkPage();
-
-          // Add cycle title with blue background
           doc.setFillColor(39, 118, 171);
           doc.rect(margin, yOffset - 5, usableWidth, 12, "F");
-
-          // Add cycle title
           doc.setFontSize(12);
           doc.setTextColor(255, 255, 255);
           doc.setFont("helvetica", "bold");
           doc.text(`Treatment Cycle #${cycle}`, margin + 5, yOffset + 2);
           yOffset += 15;
 
-          // Get cycle-specific data
           const cycleRecords = recordsByCycle[cycle];
-
-          // Find the first record in this cycle to get contract details
           const firstRecord = cycleRecords.find(
             (record) => record.contract_price && record.contract_months
           );
 
-          // Get contract price and months for this specific cycle
           const cycleContractPrice = firstRecord?.contract_price || 0;
           const cycleContractMonths = firstRecord?.contract_months || 0;
-
-          // Calculate total paid for this cycle
           const cycleTotalPaid = cycleRecords.reduce(
             (sum, record) => sum + (record.amount_paid || 0),
             0
           );
-
-          // Calculate balance for this cycle
           const cycleBalance = Math.max(0, cycleContractPrice - cycleTotalPaid);
 
-          // Create financial summary cards
-          const cardWidth = usableWidth / 4 - 4; // 4 cards with small gap
+          const cardWidth = usableWidth / 4 - 4;
           const cardHeight = 25;
 
-          // Draw 4 cards with borders and light background
           for (let i = 0; i < 4; i++) {
             const cardX = margin + (cardWidth + 4) * i;
-
-            // Card background
             doc.setFillColor(245, 250, 255);
             doc.rect(cardX, yOffset, cardWidth, cardHeight, "F");
-
-            // Card border
             doc.setDrawColor(200, 220, 240);
             doc.setLineWidth(0.5);
             doc.rect(cardX, yOffset, cardWidth, cardHeight, "S");
           }
 
-          // Contract Price
           doc.setTextColor(39, 118, 171);
           doc.setFont("helvetica", "bold");
           doc.setFontSize(8);
@@ -731,7 +685,6 @@ const PatientDetailsModal = ({
             yOffset + 17
           );
 
-          // Contract Duration
           const card2X = margin + cardWidth + 4;
           doc.setTextColor(39, 118, 171);
           doc.setFont("helvetica", "bold");
@@ -742,13 +695,12 @@ const PatientDetailsModal = ({
           doc.setFontSize(10);
           doc.text(`${cycleContractMonths} months`, card2X + 5, yOffset + 17);
 
-          // Total Paid
           const card3X = margin + (cardWidth + 4) * 2;
           doc.setTextColor(39, 118, 171);
           doc.setFont("helvetica", "bold");
           doc.setFontSize(8);
           doc.text("Total Paid", card3X + 5, yOffset + 7);
-          doc.setTextColor(0, 102, 0); // Green color for paid amount
+          doc.setTextColor(0, 102, 0);
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
           doc.text(
@@ -760,13 +712,12 @@ const PatientDetailsModal = ({
             yOffset + 17
           );
 
-          // Cycle Balance
           const card4X = margin + (cardWidth + 4) * 3;
           doc.setTextColor(39, 118, 171);
           doc.setFont("helvetica", "bold");
           doc.setFontSize(8);
           doc.text("Cycle Balance", card4X + 5, yOffset + 7);
-          doc.setTextColor(204, 0, 0); // Red color for balance
+          doc.setTextColor(204, 0, 0);
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
           doc.text(
@@ -778,26 +729,25 @@ const PatientDetailsModal = ({
             yOffset + 17
           );
 
-          // Move down after the summary cards
           yOffset += cardHeight + 10;
-
-          // Check if we need a new page before adding the table
           checkPage();
 
-          // Table headers
+          // Updated Table Headers to Include Appliances
           const headers = [
             "Appt #",
             "Date",
             "Arch Wire",
             "Procedure",
+            "Appliances", // New column
             "Amount Paid",
             "Payment Mode",
+            "Next Sched.",
           ];
-          const columnWidths = [20, 25, 30, 35, 30, 30];
+          // Adjusted column widths to accommodate Appliances (total = 170mm)
+          const columnWidths = [15, 20, 25, 30, 25, 25, 20, 20];
 
           // Prepare data for this cycle
           const data = recordsByCycle[cycle].map((record) => {
-            // Format date to save space (MM/DD/YY)
             const dateObj = record.date ? new Date(record.date) : null;
             const formattedDate = dateObj
               ? `${(dateObj.getMonth() + 1)
@@ -811,11 +761,28 @@ const PatientDetailsModal = ({
                   .substring(2)}`
               : "N/A";
 
+            // Format next_schedule
+            const nextScheduleDate = record.next_schedule
+              ? new Date(record.next_schedule)
+              : null;
+            const formattedNextSchedule = nextScheduleDate
+              ? `${(nextScheduleDate.getMonth() + 1)
+                  .toString()
+                  .padStart(2, "0")}/${nextScheduleDate
+                  .getDate()
+                  .toString()
+                  .padStart(2, "0")}/${nextScheduleDate
+                  .getFullYear()
+                  .toString()
+                  .substring(2)}`
+              : "N/A";
+
             return [
               formatValue(record.appt_no),
               formattedDate,
               formatValue(record.arch_wire),
               formatValue(record.procedure),
+              formatValue(record.appliances), // New column data
               record.amount_paid
                 ? `Php ${record.amount_paid.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
@@ -823,17 +790,23 @@ const PatientDetailsModal = ({
                   })}`
                 : "N/A",
               formatValue(record.mode_of_payment),
+              formattedNextSchedule,
             ];
           });
 
           // Draw Headers
-          doc.setFontSize(9); // Slightly smaller font for headers
+          doc.setFontSize(8); // Slightly smaller font for headers to fit
           doc.setTextColor(255, 255, 255);
           doc.setFillColor(39, 118, 171);
           doc.rect(margin, yOffset - 5, usableWidth, 10, "F");
           let xOffset = margin;
           headers.forEach((header, index) => {
-            doc.text(header, xOffset + 3, yOffset); // Add 3mm padding for text
+            // Wrap header text if too long
+            const wrappedHeader = doc.splitTextToSize(
+              header,
+              columnWidths[index] - 6
+            );
+            doc.text(wrappedHeader, xOffset + 3, yOffset);
             xOffset += columnWidths[index];
           });
           yOffset += 8;
@@ -841,13 +814,10 @@ const PatientDetailsModal = ({
           // Draw Data Rows
           doc.setTextColor(0, 0, 0);
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(8); // Smaller font for data to prevent overlap
+          doc.setFontSize(7); // Smaller font for data to prevent overlap
 
-          // Check if we need a new page before adding data rows
           checkPage();
-
           data.forEach((row, rowIndex) => {
-            // Check page before each row
             checkPage();
             xOffset = margin;
             let maxHeight = 0;
@@ -859,8 +829,8 @@ const PatientDetailsModal = ({
               const wrappedText = doc.splitTextToSize(
                 cell,
                 columnWidths[index] - 6
-              ); // Reduce width for better spacing
-              doc.text(wrappedText, xOffset + 3, yOffset); // Add 3mm padding for text
+              );
+              doc.text(wrappedText, xOffset + 3, yOffset);
               const cellHeight = wrappedText.length * 5;
               maxHeight = Math.max(maxHeight, cellHeight);
               xOffset += columnWidths[index];
@@ -868,7 +838,6 @@ const PatientDetailsModal = ({
             yOffset += maxHeight + 2;
           });
 
-          // Add space between cycles
           yOffset += 15;
         });
       }
@@ -878,7 +847,7 @@ const PatientDetailsModal = ({
       doc.setTextColor(39, 118, 171);
       doc.setFont("helvetica", "bold");
       doc.text("Treatment Records", margin, yOffset);
-      doc.setTextColor(0, 0, 0); // Reset text color to black
+      doc.setTextColor(0, 0, 0);
       yOffset += 8;
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
@@ -886,8 +855,7 @@ const PatientDetailsModal = ({
       yOffset += 10;
     }
 
-    // Add footer with page number
-    // Cast to unknown first to avoid TypeScript errors with jsPDF internal API
+    // Add footer with page number (unchanged)
     const pageCount = (
       doc as unknown as { internal: { getNumberOfPages: () => number } }
     ).internal.getNumberOfPages();

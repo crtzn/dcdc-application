@@ -67,9 +67,7 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
   onBack,
   isModal = false,
 }) => {
-  const [treatmentDate, setTreatmentDate] = useState<Date | undefined>(
-    new Date()
-  );
+  const [, setTreatmentDate] = useState<Date | undefined>(new Date());
 
   const form = useForm<TreatmentFormValues>({
     resolver: zodResolver(treatmentSchema),
