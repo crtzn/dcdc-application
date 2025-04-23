@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -143,9 +142,12 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto h-[80vh] flex flex-col">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-6 relative flex-1 overflow-y-auto pr-2"
+        >
           {/* General Information */}
           <div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -777,7 +779,7 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
                     Do you have or have you had any of the following?
                   </FormLabel>
                   <FormControl>
-                    <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md p-4 bg-gray-50">
+                    <div className="max-h-72 overflow-y-auto border border-gray-200 rounded-md p-4 bg-gray-50">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {MEDICAL_HISTORY_CHECKLIST.map((condition) => (
                           <div
@@ -822,22 +824,24 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
             />
           </div>
 
-          <CardFooter className="flex justify-between mt-6 sticky bottom-0 bg-white py-4 px-6 border-t border-gray-200 z-10 shadow-sm">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onBack}
-              className="border-gray-300 text-white bg-[#1e1e1e] hover:bg-[#1e1e1ee9] hover:text-white rounded-md shadow-sm transition-colors"
-            >
-              Back
-            </Button>
-            <Button
-              type="submit"
-              className="bg-[#1e1e1e] text-white hover:bg-[#1e1e1ee8] hover:text-white rounded-md shadow-sm transition-colors"
-            >
-              Next
-            </Button>
-          </CardFooter>
+          <div className="sticky bottom-0 left-0 right-0 bg-white py-4 px-6 border-t border-gray-200 z-10 shadow-sm mt-6">
+            <div className="flex justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onBack}
+                className="border-gray-300 text-white bg-[#1e1e1e] hover:bg-[#1e1e1ee9] hover:text-white rounded-md shadow-sm transition-colors"
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                className="bg-[#1e1e1e] text-white hover:bg-[#1e1e1ee8] hover:text-white rounded-md shadow-sm transition-colors"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </form>
       </Form>
     </div>

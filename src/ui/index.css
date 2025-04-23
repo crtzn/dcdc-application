@@ -184,3 +184,37 @@ button:focus-visible {
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom scrollbar hiding */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Custom scrollbar styling for medical history */
+.medical-conditions-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.medical-conditions-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.medical-conditions-list::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.5);
+  border-radius: 20px;
+}
+
+/* Hide scrollbar for patient modal only */
+.patient-modal > div {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.patient-modal > div::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
