@@ -308,7 +308,6 @@ const PatientDetailsModal = ({
         checkPage();
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
-        doc.text(`Medical History #${history.history_id}`, margin, yOffset);
         yOffset += 8;
 
         const historyFields = [
