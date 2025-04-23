@@ -29,7 +29,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Separator } from "@/components/ui/separator";
-import { OrthodonticTreatmentRecord } from "@/electron/types/OrthodonticPatient";
 import { CalendarDays } from "lucide-react";
 import {
   Popover,
@@ -43,7 +42,7 @@ import { cn } from "@/lib/utils";
 const treatmentSchema = z.object({
   appt_no: z.string().min(1, "Appointment number is required"),
   date: z.string().min(1, "Date is required"),
-  arch_wire: z.string().min(1, "Arch wire is required"),
+  arch_wire: z.string().min(1, "Arch wire is required").optional(),
   procedure: z.string().optional(),
   contract_price: z
     .number()
@@ -53,17 +52,15 @@ const treatmentSchema = z.object({
     .number()
     .min(1, "Contract months must be at least 1")
     .optional(),
-  amount_paid: z.number().min(0, "Amount paid must be positive"),
+  amount_paid: z.number().min(0, "Amount paid must be positive").optional(),
   next_schedule: z.string().optional(),
   mode_of_payment: z.string().optional(),
   treatment_cycle: z.number().optional(),
   balance: z.number().optional(),
 });
 
-type TreatmentFormValues = Omit<
-  OrthodonticTreatmentRecord,
-  "record_id" | "patient_id" | "created_at"
->;
+// Define the form values type based on the Zod schema
+type TreatmentFormValues = z.infer<typeof treatmentSchema>;
 
 interface OrthodonticTreatmentRecordFormProps {
   onSubmit: (data: TreatmentFormValues) => void;
@@ -88,14 +85,15 @@ const OrthodonticTreatmentRecordForm: React.FC<
     defaultValues: {
       appt_no: defaultAppointmentNumber || "",
       date: new Date().toISOString().split("T")[0],
-      arch_wire: "", // Required field
+      arch_wire: "", // Required field but marked as optional in the type
       procedure: "",
       contract_price: undefined,
       contract_months: undefined,
-      amount_paid: 0, // Required field with default value of 0
+      amount_paid: 0, // Default value of 0
       next_schedule: "",
-      mode_of_payment: "Cash", // Default to Cash as per user preference for boolean fields
+      mode_of_payment: "Cash", // Default to Cash as per user preference
       treatment_cycle: 1,
+      balance: undefined,
     },
   });
 
@@ -160,10 +158,10 @@ const OrthodonticTreatmentRecordForm: React.FC<
     fetchData();
   }, [patientId, defaultAppointmentNumber, form]);
 
-  const handleSubmit = (data: TreatmentFormValues) => {
+  const handleSubmit = form.handleSubmit((data) => {
     console.log("Form submitted with data:", data); // Add logging
     onSubmit(data);
-  };
+  });
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg border border-gray-200 p-0 sm:p-2">
@@ -173,7 +171,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
         </CardTitle>
       </CardHeader>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-2">
           <CardContent className="space-y-6 px-4 sm:px-6 pt-4">
             {/* Treatment Details */}
             <div className="bg-gray-50 p-4 rounded-lg">
@@ -257,6 +255,31 @@ const OrthodonticTreatmentRecordForm: React.FC<
                             disabled={(date) =>
                               date > new Date() || date < new Date("1900-01-01")
                             }
+                            initialFocus
+                            captionLayout="dropdown-buttons"
+                            fromYear={1900}
+                            toYear={new Date().getFullYear()}
+                            className="p-3 rounded-md border border-gray-200"
+                            classNames={{
+                              months:
+                                "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                              month: "space-y-4",
+                              caption:
+                                "flex justify-center pt-1 relative items-center",
+                              caption_label: "text-sm font-medium hidden",
+                              caption_dropdowns:
+                                "flex justify-center space-x-2",
+                              dropdown_month: "relative",
+                              dropdown_year: "relative",
+                              dropdown:
+                                "border border-gray-300 rounded-md bg-white text-sm p-1 focus:ring-2 focus:ring-blue-500",
+                              nav: "flex items-center",
+                              nav_button: "hidden",
+                              nav_button_previous: "hidden",
+                              nav_button_next: "hidden",
+                              table: "w-full border-collapse space-y-1",
+                              head_row: "flex w-full mb-2",
+                            }}
                           />
                         </PopoverContent>
                       </Popover>
@@ -451,6 +474,31 @@ const OrthodonticTreatmentRecordForm: React.FC<
                               }
                             }}
                             disabled={(date) => date < new Date("1900-01-01")}
+                            initialFocus
+                            captionLayout="dropdown-buttons"
+                            fromYear={1900}
+                            toYear={new Date().getFullYear() + 5}
+                            className="p-3 rounded-md border border-gray-200"
+                            classNames={{
+                              months:
+                                "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                              month: "space-y-4",
+                              caption:
+                                "flex justify-center pt-1 relative items-center",
+                              caption_label: "text-sm font-medium hidden",
+                              caption_dropdowns:
+                                "flex justify-center space-x-2",
+                              dropdown_month: "relative",
+                              dropdown_year: "relative",
+                              dropdown:
+                                "border border-gray-300 rounded-md bg-white text-sm p-1 focus:ring-2 focus:ring-blue-500",
+                              nav: "flex items-center",
+                              nav_button: "hidden",
+                              nav_button_previous: "hidden",
+                              nav_button_next: "hidden",
+                              table: "w-full border-collapse space-y-1",
+                              head_row: "flex w-full mb-2",
+                            }}
                           />
                         </PopoverContent>
                       </Popover>

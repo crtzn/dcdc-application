@@ -1,5 +1,5 @@
 // src/components/TreatmentRecordForm.tsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +23,15 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useForm } from "react-hook-form";
+import { CalendarDays } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const treatmentSchema = z.object({
   treatment_date: z.string().min(1, "Treatment date is required"),
@@ -58,6 +67,10 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
   onBack,
   isModal = false,
 }) => {
+  const [treatmentDate, setTreatmentDate] = useState<Date | undefined>(
+    new Date()
+  );
+
   const form = useForm<TreatmentFormValues>({
     resolver: zodResolver(treatmentSchema),
     defaultValues: {
@@ -102,14 +115,73 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
             name="treatment_date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700">Treatment Date*</FormLabel>
-                <FormControl>
-                  <Input
-                    type="date"
-                    className="border-gray-300 focus:ring-blue-500"
-                    {...field}
-                  />
-                </FormControl>
+                <FormLabel className="text-gray-700">
+                  Treatment Date <RequiredIndicator />
+                </FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal h-10 border-gray-300 rounded-md",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(new Date(field.value), "MM/dd/yyyy")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarDays className="ml-auto h-4 w-4 text-black" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-auto p-0 bg-white shadow-lg rounded-md"
+                    align="start"
+                    side="bottom"
+                    avoidCollisions
+                  >
+                    <Calendar
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          setTreatmentDate(date);
+                          field.onChange(date.toLocaleDateString("en-CA"));
+                        }
+                      }}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                      captionLayout="dropdown-buttons"
+                      fromYear={1900}
+                      toYear={new Date().getFullYear()}
+                      className="p-3 rounded-md border border-gray-200"
+                      classNames={{
+                        months:
+                          "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                        month: "space-y-4",
+                        caption:
+                          "flex justify-center pt-1 relative items-center",
+                        caption_label: "text-sm font-medium hidden",
+                        caption_dropdowns: "flex justify-center space-x-2",
+                        dropdown_month: "relative",
+                        dropdown_year: "relative",
+                        dropdown:
+                          "border border-gray-300 rounded-md bg-white text-sm p-1 focus:ring-2 focus:ring-blue-500",
+                        nav: "flex items-center",
+                        nav_button: "hidden",
+                        nav_button_previous: "hidden",
+                        nav_button_next: "hidden",
+                        table: "w-full border-collapse space-y-1",
+                        head_row: "flex w-full mb-2",
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
                 <FormMessage className="text-red-500 text-xs" />
               </FormItem>
             )}
