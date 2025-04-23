@@ -188,7 +188,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
   });
 
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-lg border border-gray-200 p-0 sm:p-2">
+    <Card className="w-full max-w-4xl mx-auto shadow-lg border border-gray-200 flex flex-col">
       <CardHeader className="pb-0 pt-4 px-6">
         <CardTitle className="text-xl font-bold text-center text-gray-800">
           Orthodontic Treatment Record
@@ -643,18 +643,18 @@ const OrthodonticTreatmentRecordForm: React.FC<
               </p>
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col sm:flex-row justify-between gap-4 px-6 py-4 bg-gray-50 rounded-b-lg">
+          <CardFooter className="flex flex-col sm:flex-row justify-between gap-4 px-6 py-4 bg-gray-50 rounded-b-lg sticky bottom-0 z-10 shadow-sm">
             <Button
               type="button"
               variant="outline"
               onClick={onBack}
-              className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-6 h-10"
+              className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-6 h-10 shadow-sm transition-colors"
             >
               Back
             </Button>
             <Button
               type="submit"
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white rounded-md px-6 h-10"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white rounded-md px-6 h-10 shadow-sm transition-colors"
             >
               Submit Record
             </Button>

@@ -137,20 +137,20 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
             />
           </div>
 
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end space-x-4 sticky bottom-0 bg-white z-10 border-t border-gray-200 py-4 px-2 mt-6 shadow-sm">
             <Button
               type="button"
               variant="outline"
               onClick={onCancel}
               disabled={isSubmitting}
-              className="border-gray-300 text-gray-700 hover:bg-gray-100"
+              className="border-gray-300 text-gray-700 hover:bg-gray-100 shadow-sm transition-colors"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
             >
               {isSubmitting ? "Starting..." : "Start New Treatment Cycle"}
             </Button>

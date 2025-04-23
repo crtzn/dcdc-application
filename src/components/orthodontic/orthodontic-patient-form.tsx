@@ -918,7 +918,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
           <Button
             type="submit"
             disabled={nameExists || isCheckingName}
-            className={`bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-1.5 text-xs sm:text-sm w-full sm:w-auto ${
+            className={`bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-1.5 text-xs sm:text-sm w-full sm:w-auto mr-5  ${
               nameExists || isCheckingName
                 ? "opacity-50 cursor-not-allowed"
                 : ""

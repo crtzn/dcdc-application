@@ -2151,7 +2151,7 @@ const PatientDetailsModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-full sm:max-w-[80rem] p-6 rounded-lg bg-white shadow-lg">
+      <DialogContent className="max-w-full sm:max-w-[80rem] rounded-lg bg-white shadow-lg">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-gray-800">
             Patient Details - {patient.info.name} ({type})
@@ -2219,7 +2219,7 @@ const PatientDetailsModal = ({
             </TabsContent>
           )}
         </Tabs>
-        <DialogFooter className="mt-6 flex justify-between gap-4">
+        <DialogFooter className="mt-6 flex justify-between gap-4 sticky bottom-0 bg-white py-4 px-6 border-t z-10">
           <Button
             variant="destructive"
             className="flex items-center gap-2"

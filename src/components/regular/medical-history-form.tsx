@@ -143,7 +143,7 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4 sm:p-6   overflow-y-auto max-h-[80vh]">
+    <div className="w-full max-w-4xl mx-auto">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* General Information */}
@@ -822,18 +822,18 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
             />
           </div>
 
-          <CardFooter className="flex justify-between mt-6 sticky bottom-0 bg-white py-[3rem] border-t border-gray-200">
+          <CardFooter className="flex justify-between mt-6 sticky bottom-0 bg-white py-4 px-6 border-t border-gray-200 z-10 shadow-sm">
             <Button
               type="button"
               variant="outline"
               onClick={onBack}
-              className="border-gray-300 text-white bg-[#1e1e1e] hover:bg-[#1e1e1ee9] hover:text-white rounded-md"
+              className="border-gray-300 text-white bg-[#1e1e1e] hover:bg-[#1e1e1ee9] hover:text-white rounded-md shadow-sm transition-colors"
             >
               Back
             </Button>
             <Button
               type="submit"
-              className="bg-[#1e1e1e] text-white  hover:bg-[#1e1e1ee8] hover:text-white text-white rounded-md"
+              className="bg-[#1e1e1e] text-white hover:bg-[#1e1e1ee8] hover:text-white rounded-md shadow-sm transition-colors"
             >
               Next
             </Button>

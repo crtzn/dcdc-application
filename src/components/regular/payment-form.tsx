@@ -248,7 +248,7 @@ const PaymentForm = ({
           )}
         />
 
-        <div className="flex justify-end space-x-4 pt-4">
+        <div className="flex justify-end space-x-4 sticky bottom-0 bg-white z-10 border-t border-gray-200 py-4 px-2 mt-6 shadow-sm">
           <Button
             type="button"
             variant="outline"
@@ -259,7 +259,7 @@ const PaymentForm = ({
           </Button>
           <Button
             type="submit"
-            className="bg-green-600 text-white hover:bg-green-700"
+            className="bg-green-600 text-white hover:bg-green-700 shadow-sm transition-colors"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Processing..." : "Record Payment"}

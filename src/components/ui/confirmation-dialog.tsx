@@ -37,12 +37,12 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] p-0">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <DialogFooter className="flex gap-2 justify-end mt-4">
+        <DialogFooter className="flex gap-2 justify-end mt-4 sticky bottom-0 bg-white py-4 px-6 border-t z-10 shadow-sm">
           <Button variant="outline" onClick={onClose}>
             {cancelText}
           </Button>
