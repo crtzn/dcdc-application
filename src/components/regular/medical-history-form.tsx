@@ -142,15 +142,18 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto h-[80vh] flex flex-col">
+    <div className="w-full max-w-4xl mx-auto flex flex-col relative">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-6 relative flex-1 overflow-y-auto pr-2"
+          className="space-y-6 relative flex-1 overflow-y-auto pr-2 pb-20"
         >
           {/* General Information */}
           <div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <h3 className="text-lg font-medium text-gray-700 mb-4">
+              General Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="general_health"
@@ -250,132 +253,137 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
             <h3 className="text-lg font-medium text-gray-700 mb-4">
               Are you under medical treatment?
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="under_medical_treatment"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">
-                      Under Medical Treatment?
-                    </FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={(value) =>
-                          field.onChange(value === "true")
-                        }
-                        value={field.value ? "true" : "false"}
-                        className="flex space-x-6"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="true" id="treatment_yes" />
-                          <FormLabel
-                            htmlFor="treatment_yes"
-                            className="text-gray-600"
-                          >
-                            Yes
-                          </FormLabel>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="false" id="treatment_no" />
-                          <FormLabel
-                            htmlFor="treatment_no"
-                            className="text-gray-600"
-                          >
-                            No
-                          </FormLabel>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage className="text-red-500" />
-                  </FormItem>
-                )}
-              />
-              {underMedicalTreatment && (
+            <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <FormField
                   control={form.control}
-                  name="medical_condition"
+                  name="under_medical_treatment"
                   render={({ field }) => (
-                    <FormItem className="transition-all duration-300">
+                    <FormItem>
                       <FormLabel className="text-gray-700 font-medium">
-                        Medical Condition
+                        Under Medical Treatment?
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Specify medical condition"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          {...field}
-                          value={field.value || ""}
-                        />
+                        <RadioGroup
+                          onValueChange={(value) =>
+                            field.onChange(value === "true")
+                          }
+                          value={field.value ? "true" : "false"}
+                          className="flex space-x-6"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="true" id="treatment_yes" />
+                            <FormLabel
+                              htmlFor="treatment_yes"
+                              className="text-gray-600"
+                            >
+                              Yes
+                            </FormLabel>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="false" id="treatment_no" />
+                            <FormLabel
+                              htmlFor="treatment_no"
+                              className="text-gray-600"
+                            >
+                              No
+                            </FormLabel>
+                          </div>
+                        </RadioGroup>
                       </FormControl>
                       <FormMessage className="text-red-500" />
                     </FormItem>
                   )}
                 />
-              )}
-              <FormField
-                control={form.control}
-                name="taking_medications"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">
-                      Are you taking any prescriptions / non prescription
-                      medication?
-                    </FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={(value) =>
-                          field.onChange(value === "true")
-                        }
-                        value={field.value ? "true" : "false"}
-                        className="flex space-x-6"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="true" id="medications_yes" />
-                          <FormLabel
-                            htmlFor="medications_yes"
-                            className="text-gray-600"
-                          >
-                            Yes
-                          </FormLabel>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="false" id="medications_no" />
-                          <FormLabel
-                            htmlFor="medications_no"
-                            className="text-gray-600"
-                          >
-                            No
-                          </FormLabel>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage className="text-red-500" />
-                  </FormItem>
+                {underMedicalTreatment && (
+                  <FormField
+                    control={form.control}
+                    name="medical_condition"
+                    render={({ field }) => (
+                      <FormItem className="transition-all duration-300 ml-6 border-l-2 border-gray-200 pl-4">
+                        <FormLabel className="text-gray-700 font-medium">
+                          Medical Condition
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Specify medical condition"
+                            className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage className="text-red-500" />
+                      </FormItem>
+                    )}
+                  />
                 )}
-              />
-              {takingMedications && (
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
                 <FormField
                   control={form.control}
-                  name="medications_list"
+                  name="taking_medications"
                   render={({ field }) => (
-                    <FormItem className="transition-all duration-300">
+                    <FormItem>
                       <FormLabel className="text-gray-700 font-medium">
-                        Medications List
+                        Are you taking any prescriptions / non prescription
+                        medication?
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="List all medications"
-                          className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          {...field}
-                          value={field.value || ""}
-                        />
+                        <RadioGroup
+                          onValueChange={(value) =>
+                            field.onChange(value === "true")
+                          }
+                          value={field.value ? "true" : "false"}
+                          className="flex space-x-6"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="true" id="medications_yes" />
+                            <FormLabel
+                              htmlFor="medications_yes"
+                              className="text-gray-600"
+                            >
+                              Yes
+                            </FormLabel>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="false" id="medications_no" />
+                            <FormLabel
+                              htmlFor="medications_no"
+                              className="text-gray-600"
+                            >
+                              No
+                            </FormLabel>
+                          </div>
+                        </RadioGroup>
                       </FormControl>
                       <FormMessage className="text-red-500" />
                     </FormItem>
                   )}
                 />
-              )}
+                {takingMedications && (
+                  <FormField
+                    control={form.control}
+                    name="medications_list"
+                    render={({ field }) => (
+                      <FormItem className="transition-all duration-300 ml-6 border-l-2 border-gray-200 pl-4">
+                        <FormLabel className="text-gray-700 font-medium">
+                          Medications List
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="List all medications"
+                            className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage className="text-red-500" />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
             </div>
           </div>
 
@@ -386,117 +394,128 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
             <h3 className="text-lg font-medium text-gray-700 mb-4">
               Medical History
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="serious_illness_or_surgery"
-                render={({ field }) => (
-                  <FormItem>
+            <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-4">
+                <FormField
+                  control={form.control}
+                  name="serious_illness_or_surgery"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">
+                        Serious Illness or Surgery?
+                      </FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={(value) =>
+                            field.onChange(value === "true")
+                          }
+                          value={field.value ? "true" : "false"}
+                          className="flex space-x-6"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="true" id="illness_yes" />
+                            <FormLabel
+                              htmlFor="illness_yes"
+                              className="text-gray-600"
+                            >
+                              Yes
+                            </FormLabel>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="false" id="illness_no" />
+                            <FormLabel
+                              htmlFor="illness_no"
+                              className="text-gray-600"
+                            >
+                              No
+                            </FormLabel>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage className="text-red-500" />
+                    </FormItem>
+                  )}
+                />
+                {seriousIllnessOrSurgery && (
+                  <FormItem className="transition-all duration-300 ml-6 border-l-2 border-gray-200 pl-4">
                     <FormLabel className="text-gray-700 font-medium">
-                      Serious Illness or Surgery?
+                      Illness/Surgery Details
                     </FormLabel>
                     <FormControl>
-                      <RadioGroup
-                        onValueChange={(value) =>
-                          field.onChange(value === "true")
-                        }
-                        value={field.value ? "true" : "false"}
-                        className="flex space-x-6"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="true" id="illness_yes" />
-                          <FormLabel
-                            htmlFor="illness_yes"
-                            className="text-gray-600"
-                          >
-                            Yes
-                          </FormLabel>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="false" id="illness_no" />
-                          <FormLabel
-                            htmlFor="illness_no"
-                            className="text-gray-600"
-                          >
-                            No
-                          </FormLabel>
-                        </div>
-                      </RadioGroup>
+                      <Input
+                        placeholder="When and why?"
+                        className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        {...form.register("illness_or_surgery_details")}
+                      />
                     </FormControl>
                     <FormMessage className="text-red-500" />
                   </FormItem>
                 )}
-              />
-              {seriousIllnessOrSurgery && (
-                <FormItem className="transition-all duration-300">
-                  <FormLabel className="text-gray-700 font-medium">
-                    Illness/Surgery Details
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="When and why?"
-                      className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      {...form.register("illness_or_surgery_details")}
-                    />
-                  </FormControl>
-                  <FormMessage className="text-red-500" />
-                </FormItem>
-              )}
-              <FormField
-                control={form.control}
-                name="hospitalized"
-                render={({ field }) => (
-                  <FormItem>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <FormField
+                  control={form.control}
+                  name="hospitalized"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">
+                        Ever Hospitalized?
+                      </FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={(value) =>
+                            field.onChange(value === "true")
+                          }
+                          value={field.value ? "true" : "false"}
+                          className="flex space-x-6"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem
+                              value="true"
+                              id="hospitalized_yes"
+                            />
+                            <FormLabel
+                              htmlFor="hospitalized_yes"
+                              className="text-gray-600"
+                            >
+                              Yes
+                            </FormLabel>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem
+                              value="false"
+                              id="hospitalized_no"
+                            />
+                            <FormLabel
+                              htmlFor="hospitalized_no"
+                              className="text-gray-600"
+                            >
+                              No
+                            </FormLabel>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage className="text-red-500" />
+                    </FormItem>
+                  )}
+                />
+                {hospitalized && (
+                  <FormItem className="transition-all duration-300 ml-6 border-l-2 border-gray-200 pl-4">
                     <FormLabel className="text-gray-700 font-medium">
-                      Ever Hospitalized?
+                      Hospitalization Details
                     </FormLabel>
                     <FormControl>
-                      <RadioGroup
-                        onValueChange={(value) =>
-                          field.onChange(value === "true")
-                        }
-                        value={field.value ? "true" : "false"}
-                        className="flex space-x-6"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="true" id="hospitalized_yes" />
-                          <FormLabel
-                            htmlFor="hospitalized_yes"
-                            className="text-gray-600"
-                          >
-                            Yes
-                          </FormLabel>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="false" id="hospitalized_no" />
-                          <FormLabel
-                            htmlFor="hospitalized_no"
-                            className="text-gray-600"
-                          >
-                            No
-                          </FormLabel>
-                        </div>
-                      </RadioGroup>
+                      <Input
+                        placeholder="Why were you hospitalized?"
+                        className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        {...form.register("hospitalization_details")}
+                      />
                     </FormControl>
                     <FormMessage className="text-red-500" />
                   </FormItem>
                 )}
-              />
-              {hospitalized && (
-                <FormItem className="transition-all duration-300">
-                  <FormLabel className="text-gray-700 font-medium">
-                    Hospitalization Details
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Why were you hospitalized?"
-                      className="border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      {...form.register("hospitalization_details")}
-                    />
-                  </FormControl>
-                  <FormMessage className="text-red-500" />
-                </FormItem>
-              )}
+              </div>
             </div>
           </div>
 
@@ -507,7 +526,7 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
             <h3 className="text-lg font-medium text-gray-700 mb-4">
               Lifestyle and Allergies
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="uses_tobacco"
@@ -557,7 +576,7 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
                       Allergies
                     </FormLabel>
                     <FormControl>
-                      <div className="space-y-3">
+                      <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                         {ALLERGIES.map((allergy) => (
                           <div
                             key={allergy}
@@ -639,7 +658,7 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
             <h3 className="text-lg font-medium text-gray-700 mb-4">
               Reproductive Health
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="is_pregnant"
@@ -824,8 +843,8 @@ const MedicalHistoryForm: React.FC<MedicalHistoryFormProps> = ({
             />
           </div>
 
-          <div className="sticky bottom-0 left-0 right-0 bg-white py-4 px-6 border-t border-gray-200 z-10 shadow-sm mt-6">
-            <div className="flex justify-between">
+          <div className="fixed bottom-0 left-0 right-0 bg-white py-4 px-6 border-t border-gray-200 z-50 shadow-md w-full">
+            <div className="max-w-4xl mx-auto flex justify-between">
               <Button
                 type="button"
                 variant="outline"
