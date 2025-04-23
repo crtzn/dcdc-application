@@ -6,7 +6,7 @@ import RecentPatientsList from "@/components/dashboard/RecentPatientList";
 
 function Dashboard() {
   return (
-    <div className="main-page flex flex-col p-8">
+    <div className="main-page flex flex-col p-8 pt-10">
       <div className="header-text">
         <h1 className="text-start text-[#1e1e1e]">
           Welcome to <span className="text-[#24336f]">D</span>

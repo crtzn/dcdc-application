@@ -45,7 +45,17 @@ app.on("ready", () => {
     webPreferences: {
       preload: getPreloadPath(),
     },
+    fullscreen: true,
+    resizable: false,
+    minimizable: true,
+    maximizable: false,
   });
+
+  // Prevent exiting fullscreen mode
+  mainWindow.on("leave-full-screen", () => {
+    mainWindow.setFullScreen(true);
+  });
+
   if (isDev()) {
     mainWindow.loadURL("http://localhost:5123");
   } else {

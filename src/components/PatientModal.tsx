@@ -33,7 +33,7 @@ function PatientModal() {
         onCloseAutoFocus={handleClose} // Reset form when closed
       >
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-gray-800">
+          <DialogTitle className="text-xl font-semibold text-gray-800 mb-5">
             Register New Patient
           </DialogTitle>
         </DialogHeader>

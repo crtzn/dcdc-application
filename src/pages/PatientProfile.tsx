@@ -196,7 +196,7 @@ const PatientList = () => {
   };
 
   return (
-    <div className="w-full mx-auto p-8">
+    <div className="w-full mx-auto p-8 pt-10">
       <CardHeader className="pb-0">
         <CardTitle className="text-xl text-start font-semibold text-[#1e1e1e]">
           <h1>Patient List</h1>
