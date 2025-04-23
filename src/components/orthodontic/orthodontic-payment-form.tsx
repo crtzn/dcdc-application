@@ -164,11 +164,6 @@ const OrthodonticPaymentForm = ({
               <span className="font-bold">{patient.treatment_status}</span>
             </p>
           </div>
-          <p className="text-xs text-amber-600 mt-1 ml-7">
-            Note: Treatment status is based on appointment count (
-            {patient.current_contract_months} appointments needed), not payment
-            completion.
-          </p>
         </div>
       </div>
 

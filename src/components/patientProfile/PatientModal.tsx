@@ -1367,11 +1367,6 @@ const PatientDetailsModal = ({
                     No payment history available
                   </p>
                 </div>
-                <p className="text-xs text-amber-600 ml-7">
-                  Treatment status is based on appointment count (
-                  {orthoPatient.current_contract_months || 0} appointments
-                  needed), not payment completion.
-                </p>
               </div>
             </div>
 
@@ -1741,9 +1736,8 @@ const PatientDetailsModal = ({
                 {orthoPatient.treatment_status || "Not Started"}
               </h3>
               <p className="text-xs text-gray-500 mt-1">
-                Treatment status will be marked as "Completed" when{" "}
-                {orthoPatient.current_contract_months || 0} appointments are
-                reached.
+                Treatment status will be marked as "Completed" when appointment
+                #{(orthoPatient.current_contract_months || 0) + 1} is reached.
               </p>
             </div>
             <div className="flex gap-2">

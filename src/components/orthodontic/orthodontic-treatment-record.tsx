@@ -225,7 +225,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                       {patientId !== undefined && (
                         <FormDescription className="text-xs text-gray-500">
                           Appointment number is automatically assigned and
-                          cannot be edited
+                          cannot be edited.
                         </FormDescription>
                       )}
                       <FormMessage className="text-red-500 text-xs" />
@@ -481,7 +481,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                           />
                         </FormControl>
                         <FormDescription className="text-xs text-gray-500">
-                          Expected duration of the treatment in months
+                          Expected duration of the treatment in months.
                         </FormDescription>
                         <FormMessage className="text-red-500 text-xs" />
                       </FormItem>
