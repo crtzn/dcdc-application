@@ -90,7 +90,7 @@ const OrthodonticMultiStepForm: React.FC = () => {
       setPatientData({});
       setTreatmentRecordData({});
       setPatientId(null);
-      navigate("/");
+      navigate("/patient-profile");
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

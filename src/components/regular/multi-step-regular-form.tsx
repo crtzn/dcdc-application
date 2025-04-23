@@ -92,7 +92,7 @@ const MultiStepForm: React.FC = () => {
       setMedicalHistoryData({});
       setTreatmentRecordData({});
       setPatientId(null);
-      navigate("/"); // Navigate to dashboard to see updated counts
+      navigate("/patient-profile"); // Navigate to dashboard to see updated counts
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
