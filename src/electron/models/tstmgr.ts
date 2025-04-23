@@ -876,12 +876,30 @@ export function getPatientDetails(
         FROM orthodontic_patients
         WHERE patient_id = ?
       `);
-      const result = infoStmt.get(patientId) as OrthodonticPatient | undefined;
+      const result = infoStmt.get(patientId) as any;
 
       if (!result) {
         throw new Error("Orthodontic patient not found");
       }
-      patientInfo = result;
+
+      // Convert database boolean fields to Yes/No strings for the interface
+      const mappedResult: OrthodonticPatient = {
+        ...result,
+        // Map temporomandibular_joint_problems to tmj_problems
+        tmj_problems: result.temporomandibular_joint_problems ? "Yes" : "No",
+        // Map other boolean fields
+        under_treatment_or_medication: result.under_treatment_or_medication
+          ? "Yes"
+          : "No",
+        congenital_abnormalities: result.congenital_abnormalities
+          ? "Yes"
+          : "No",
+      };
+
+      // Remove the database field to avoid duplication
+      delete (mappedResult as any).temporomandibular_joint_problems;
+
+      patientInfo = mappedResult;
 
       // Fetch treatment records
       const recordsStmt = db.prepare(`
@@ -1096,13 +1114,28 @@ export function updateOrthodonticPatient(
   error?: string;
 } {
   try {
-    const fields = Object.keys(patient)
+    // Create a copy of the patient object to avoid modifying the original
+    const patientData: Record<string, any> = { ...patient };
+
+    // Handle field name mapping for tmj_problems
+    if ("tmj_problems" in patientData) {
+      // Map tmj_problems to temporomandibular_joint_problems
+      // Convert Yes/No string to 1/0 boolean for database storage
+      patientData.temporomandibular_joint_problems =
+        patientData.tmj_problems === "Yes" ? 1 : 0;
+      // Remove the original field to avoid SQL errors
+      delete patientData.tmj_problems;
+    }
+
+    const fields = Object.keys(patientData)
       .map((key) => `${key} = ?`)
       .join(", ");
-    const values = Object.values(patient);
+    const values = Object.values(patientData);
+
     if (!fields) {
       return { success: false, error: "No fields to update" };
     }
+
     const stmt = db.prepare(`
       UPDATE orthodontic_patients
       SET ${fields}
