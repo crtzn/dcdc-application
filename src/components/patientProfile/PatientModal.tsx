@@ -1849,9 +1849,7 @@ const PatientDetailsModal = ({
                         <TableCell>{formatValue(record.date)}</TableCell>
                         <TableCell>{formatValue(record.arch_wire)}</TableCell>
                         <TableCell>{formatValue(record.procedure)}</TableCell>
-                        <TableCell>
-                          {formatValue(record.appliances)}
-                        </TableCell>{" "}
+                        <TableCell>{formatValue(record.appliances)}</TableCell>
                         {/* New column */}
                         <TableCell>
                           {record.amount_paid
