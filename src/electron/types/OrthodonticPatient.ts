@@ -37,6 +37,7 @@ export interface OrthodonticTreatmentRecord {
   date: string;
   arch_wire?: string;
   procedure?: string;
+  appliances?: string;
   contract_price?: number;
   contract_months?: number;
   amount_paid?: number;

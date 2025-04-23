@@ -45,6 +45,7 @@ const treatmentSchema = z.object({
   date: z.string().min(1, "Date is required"),
   arch_wire: z.string().min(1, "Arch wire is required").optional(),
   procedure: z.string().optional(),
+  appliances: z.string().optional(),
   contract_price: z
     .number()
     .min(0, "Contract price must be positive")
@@ -80,6 +81,8 @@ const OrthodonticTreatmentRecordForm: React.FC<
   const [nextScheduleDate, setNextScheduleDate] = useState<Date | undefined>(
     undefined
   );
+  const [showOtherInput, setShowOtherInput] = useState(false);
+  const [otherValue, setOtherValue] = useState("");
 
   // Popover states for calendar controls
   const treatmentDatePopover = usePopoverClose();
@@ -92,6 +95,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
       date: new Date().toISOString().split("T")[0],
       arch_wire: "", // Required field but marked as optional in the type
       procedure: "",
+      appliances: "",
       contract_price: undefined,
       contract_months: undefined,
       amount_paid: 0, // Default value of 0
@@ -101,6 +105,21 @@ const OrthodonticTreatmentRecordForm: React.FC<
       balance: undefined,
     },
   });
+
+  // Initialize appliances field state when component mounts
+  useEffect(() => {
+    const appliancesValue = form.getValues("appliances");
+    if (appliancesValue) {
+      if (
+        ["Pads", "Anterior Bite Plate", "Retainers"].includes(appliancesValue)
+      ) {
+        setShowOtherInput(false);
+      } else {
+        setShowOtherInput(true);
+        setOtherValue(appliancesValue);
+      }
+    }
+  }, [form]);
 
   // Fetch the next appointment number and patient details when the component mounts
   useEffect(() => {
@@ -330,6 +349,71 @@ const OrthodonticTreatmentRecordForm: React.FC<
                           {...field}
                         />
                       </FormControl>
+                      <FormMessage className="text-red-500 text-xs" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="appliances"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col space-y-1.5">
+                      <FormLabel className="text-gray-700 font-medium">
+                        Appliances
+                      </FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          if (value === "Others") {
+                            setShowOtherInput(true);
+                            // Keep the current value if switching to Others
+                            if (
+                              field.value &&
+                              field.value !== "Others" &&
+                              ![
+                                "Pads",
+                                "Anterior Bite Plate",
+                                "Retainers",
+                              ].includes(field.value)
+                            ) {
+                              setOtherValue(field.value);
+                            }
+                          } else {
+                            setShowOtherInput(false);
+                            field.onChange(value);
+                          }
+                        }}
+                        value={showOtherInput ? "Others" : field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10">
+                            <SelectValue placeholder="Select appliance" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Pads">Pads</SelectItem>
+                          <SelectItem value="Anterior Bite Plate">
+                            Anterior Bite Plate
+                          </SelectItem>
+                          <SelectItem value="Retainers">Retainers</SelectItem>
+                          <SelectItem value="Others">Others</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {showOtherInput && (
+                        <div className="mt-2">
+                          <Input
+                            placeholder="Specify other appliance"
+                            className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
+                            value={otherValue}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setOtherValue(value);
+                              field.onChange(value);
+                            }}
+                          />
+                        </div>
+                      )}
+
                       <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
                   )}

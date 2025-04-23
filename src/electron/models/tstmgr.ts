@@ -140,6 +140,7 @@ function initializeDatabase() {
         date TEXT,
         arch_wire TEXT,
         procedure TEXT,
+        appliances TEXT,
         contract_price REAL,
         contract_months INTEGER,
         amount_paid REAL,
@@ -411,9 +412,9 @@ export function addOrthodonticTreatmentRecord(
       // Insert the treatment record
       const stmt = db.prepare(`
         INSERT INTO orthodontic_treatment_records (
-          patient_id, treatment_cycle, appt_no, date, arch_wire, procedure,
+          patient_id, treatment_cycle, appt_no, date, arch_wire, procedure, appliances,
           contract_price, contract_months, amount_paid, mode_of_payment, next_schedule, balance
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       // Calculate balance for this record
@@ -452,6 +453,7 @@ export function addOrthodonticTreatmentRecord(
         record.date || null,
         record.arch_wire || null,
         record.procedure || null,
+        record.appliances || null,
         record.contract_price || null,
         record.contract_months || null,
         record.amount_paid || null,
@@ -875,7 +877,7 @@ export function getPatientDetails(
 
       // Fetch treatment records
       const recordsStmt = db.prepare(`
-        SELECT record_id, patient_id, treatment_cycle, appt_no, date, arch_wire, procedure,
+        SELECT record_id, patient_id, treatment_cycle, appt_no, date, arch_wire, procedure, appliances,
                contract_price, contract_months, amount_paid, mode_of_payment, next_schedule, balance
         FROM orthodontic_treatment_records
         WHERE patient_id = ?
