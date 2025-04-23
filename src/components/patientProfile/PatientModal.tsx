@@ -135,20 +135,30 @@ const PatientDetailsModal = ({
     }
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     const doc = new jsPDF();
     let yOffset = 20;
     const pageWidth = 210; // A4 page width in mm
     const margin = 10;
     const usableWidth = pageWidth - 2 * margin; // 170mm
 
-    // Logo dimensions (unchanged)
+    // Logo dimensions
     const logoWidth = 30;
     const logoHeight = 30;
 
-    // Function to add header on each page (unchanged)
-    const addHeader = () => {
-      const logoUrl = "/desktopIcon.png";
+    // Function to add header on each page
+    const addHeader = async () => {
+      // Use a path that works in both development and production
+      let logoUrl = "/desktopIcon.png";
+
+      if (window.api.getLogoPath) {
+        try {
+          logoUrl = await window.api.getLogoPath();
+        } catch (error) {
+          console.error("Error getting logo path:", error);
+        }
+      }
+
       try {
         doc.addImage(logoUrl, "PNG", margin, 10, logoWidth, logoHeight);
       } catch (error) {
@@ -190,17 +200,17 @@ const PatientDetailsModal = ({
       yOffset = 50;
     };
 
-    // Function to check if a new page is needed (unchanged)
-    const checkPage = () => {
+    // Function to check if a new page is needed
+    const checkPage = async () => {
       if (yOffset > 250) {
         doc.addPage();
-        addHeader();
+        await addHeader();
         yOffset = 50;
       }
     };
 
     // Add header to first page
-    addHeader();
+    await addHeader();
 
     // Title (unchanged)
     doc.setFontSize(18);
@@ -277,8 +287,8 @@ const PatientDetailsModal = ({
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    patientFields.forEach(({ key, label }) => {
-      checkPage();
+    for (const { key, label } of patientFields) {
+      await checkPage();
       const value = formatValue(
         (patient.info as RegularPatient | OrthodonticPatient)[
           key as keyof (RegularPatient | OrthodonticPatient)
@@ -287,7 +297,7 @@ const PatientDetailsModal = ({
       doc.text(`${label}:`, margin, yOffset);
       doc.text(value, margin + 60, yOffset);
       yOffset += 8;
-    });
+    }
     yOffset += 10;
 
     // Medical History Section (unchanged)
@@ -296,7 +306,7 @@ const PatientDetailsModal = ({
       patient.medicalHistory &&
       patient.medicalHistory.length > 0
     ) {
-      checkPage();
+      await checkPage();
       doc.setFontSize(14);
       doc.setTextColor(39, 118, 171);
       doc.setFont("helvetica", "bold");
@@ -304,8 +314,8 @@ const PatientDetailsModal = ({
       doc.setTextColor(0, 0, 0);
       yOffset += 8;
 
-      patient.medicalHistory.forEach((history) => {
-        checkPage();
+      for (const history of patient.medicalHistory) {
+        await checkPage();
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         yOffset += 8;
@@ -342,16 +352,16 @@ const PatientDetailsModal = ({
 
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
-        historyFields.forEach(({ label, value }) => {
-          checkPage();
+        for (const { label, value } of historyFields) {
+          await checkPage();
           doc.text(`${label}:`, margin + 5, yOffset);
           doc.text(formatValue(value), margin + 45, yOffset);
           yOffset += 8;
-        });
+        }
         yOffset += 5;
-      });
+      }
     } else if (type === "Regular") {
-      checkPage();
+      await checkPage();
       doc.setFontSize(14);
       doc.setTextColor(39, 118, 171);
       doc.setFont("helvetica", "bold");
@@ -366,7 +376,7 @@ const PatientDetailsModal = ({
 
     // Treatment Records Section
     if (patient.treatmentRecords && patient.treatmentRecords.length > 0) {
-      checkPage();
+      await checkPage();
       doc.setFontSize(14);
       doc.setTextColor(39, 118, 171);
       doc.setFont("helvetica", "bold");
@@ -382,7 +392,7 @@ const PatientDetailsModal = ({
             0
           );
 
-          checkPage();
+          await checkPage();
           yOffset += 10;
           doc.setFontSize(14);
           doc.setTextColor(39, 118, 171);
@@ -409,7 +419,7 @@ const PatientDetailsModal = ({
           );
           yOffset += 10;
 
-          checkPage();
+          await checkPage();
           const paymentHeaders = [
             "Date",
             "Amount Paid",
@@ -461,15 +471,16 @@ const PatientDetailsModal = ({
           doc.setTextColor(0, 0, 0);
           doc.setFont("helvetica", "normal");
           doc.setFontSize(8);
-          paymentData.forEach((row, rowIndex) => {
-            checkPage();
+          for (const [rowIndex, row] of paymentData.entries()) {
+            await checkPage();
             xOffset = margin;
             let maxHeight = 0;
             if (rowIndex % 2 === 0) {
               doc.setFillColor(240, 240, 240);
               doc.rect(margin, yOffset - 5, usableWidth, 10, "F");
             }
-            row.forEach((cell, index) => {
+            for (let index = 0; index < row.length; index++) {
+              const cell = row[index];
               const wrappedText = doc.splitTextToSize(
                 cell,
                 paymentColumnWidths[index] - 6
@@ -478,9 +489,9 @@ const PatientDetailsModal = ({
               const cellHeight = wrappedText.length * 5;
               maxHeight = Math.max(maxHeight, cellHeight);
               xOffset += paymentColumnWidths[index];
-            });
+            }
             yOffset += maxHeight + 2;
-          });
+          }
 
           yOffset += 10;
         } else {
@@ -494,7 +505,7 @@ const PatientDetailsModal = ({
               0
             );
 
-            checkPage();
+            await checkPage();
             yOffset += 10;
             doc.setFontSize(14);
             doc.setTextColor(39, 118, 171);
@@ -591,15 +602,16 @@ const PatientDetailsModal = ({
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
-        data.forEach((row, rowIndex) => {
-          checkPage();
+        for (const [rowIndex, row] of data.entries()) {
+          await checkPage();
           xOffset = margin;
           let maxHeight = 0;
           if (rowIndex % 2 === 0) {
             doc.setFillColor(240, 240, 240);
             doc.rect(margin, yOffset - 5, usableWidth, 10, "F");
           }
-          row.forEach((cell, index) => {
+          for (let index = 0; index < row.length; index++) {
+            const cell = row[index];
             const wrappedText = doc.splitTextToSize(
               cell,
               columnWidths[index] - 6
@@ -608,9 +620,9 @@ const PatientDetailsModal = ({
             const cellHeight = wrappedText.length * 5;
             maxHeight = Math.max(maxHeight, cellHeight);
             xOffset += columnWidths[index];
-          });
+          }
           yOffset += maxHeight + 2;
-        });
+        }
       } else {
         // Orthodontic Treatment Records (Updated Section)
         const records =
@@ -629,12 +641,12 @@ const PatientDetailsModal = ({
           .map(Number)
           .sort((a, b) => a - b);
 
-        sortedCycles.forEach((cycle, index) => {
+        for (const [index, cycle] of sortedCycles.entries()) {
           if (index > 0) {
             yOffset += 10;
           }
 
-          checkPage();
+          await checkPage();
           doc.setFillColor(39, 118, 171);
           doc.rect(margin, yOffset - 5, usableWidth, 12, "F");
           doc.setFontSize(12);
@@ -729,7 +741,7 @@ const PatientDetailsModal = ({
           );
 
           yOffset += cardHeight + 10;
-          checkPage();
+          await checkPage();
 
           // Updated Table Headers to Include Appliances
           const headers = [
@@ -815,16 +827,17 @@ const PatientDetailsModal = ({
           doc.setFont("helvetica", "normal");
           doc.setFontSize(7); // Smaller font for data to prevent overlap
 
-          checkPage();
-          data.forEach((row, rowIndex) => {
-            checkPage();
+          await checkPage();
+          for (const [rowIndex, row] of data.entries()) {
+            await checkPage();
             xOffset = margin;
             let maxHeight = 0;
             if (rowIndex % 2 === 0) {
               doc.setFillColor(240, 240, 240);
               doc.rect(margin, yOffset - 5, usableWidth, 10, "F");
             }
-            row.forEach((cell, index) => {
+            for (let index = 0; index < row.length; index++) {
+              const cell = row[index];
               const wrappedText = doc.splitTextToSize(
                 cell,
                 columnWidths[index] - 6
@@ -833,15 +846,15 @@ const PatientDetailsModal = ({
               const cellHeight = wrappedText.length * 5;
               maxHeight = Math.max(maxHeight, cellHeight);
               xOffset += columnWidths[index];
-            });
+            }
             yOffset += maxHeight + 2;
-          });
+          }
 
           yOffset += 15;
-        });
+        }
       }
     } else {
-      checkPage();
+      await checkPage();
       doc.setFontSize(14);
       doc.setTextColor(39, 118, 171);
       doc.setFont("helvetica", "bold");
@@ -2219,7 +2232,16 @@ const PatientDetailsModal = ({
           <div className="flex gap-4">
             <Button
               className="bg-[#24336f] text-white hover:bg-[#24336fd8]"
-              onClick={exportToPDF}
+              onClick={() => {
+                toast.info("Generating PDF...");
+                exportToPDF()
+                  .then(() => {
+                    // Success is already handled in exportToPDF
+                  })
+                  .catch((error) => {
+                    toast.error(`Error exporting PDF: ${error.message}`);
+                  });
+              }}
             >
               Export to PDF
             </Button>

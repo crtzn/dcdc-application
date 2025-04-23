@@ -181,4 +181,7 @@ electron.contextBridge.exposeInMainWorld("api", {
   selectFile: (options: any) => ipcRenderer.invoke("select-file", options),
   selectSaveFilePath: (options: any) =>
     ipcRenderer.invoke("select-save-file-path", options),
+
+  // Resource path functions
+  getLogoPath: () => ipcRenderer.invoke("get-logo-path"),
 });

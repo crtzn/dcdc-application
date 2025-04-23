@@ -237,6 +237,9 @@ interface ElectronAPI {
     canceled: boolean;
     filePath?: string;
   } | null>;
+
+  // Resource path functions
+  getLogoPath: () => Promise<string>;
 }
 
 declare global {

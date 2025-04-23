@@ -662,3 +662,19 @@ ipcMain.handle("select-save-file-path", async (_event, options: any) => {
     return null;
   }
 });
+
+// Resource path handlers
+ipcMain.handle("get-logo-path", () => {
+  try {
+    // In development mode, use the app directory path
+    if (isDev()) {
+      return path.join(app.getAppPath(), "desktopIcon.png");
+    } else {
+      // In production mode, use the resources directory path
+      return path.join(process.resourcesPath, "desktopIcon.png");
+    }
+  } catch (error) {
+    console.error("IPC get-logo-path error:", error);
+    return "/desktopIcon.png"; // Fallback to the original path
+  }
+});

@@ -5,6 +5,10 @@
     {
       "from": "clinic.db",
       "to": "clinic.db"
+    },
+    {
+      "from": "desktopIcon.png",
+      "to": "desktopIcon.png"
     }
   ],
   "icon": "./desktopIcon.png",
