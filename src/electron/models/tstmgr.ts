@@ -522,8 +522,10 @@ export function addOrthodonticTreatmentRecord(
         }
 
         // Check if this appointment completes the treatment
-        // Note: Contract duration starts from appointment #2, with #1 being the initial consultation
-        // So treatment is complete when appointment count reaches (contract_months + 1)
+        // Note: Appointment #1 is just the initial consultation and doesn't count toward the contract duration
+        // The contract duration starts counting from appointment #2
+        // So treatment is complete when the highest appointment number reaches (contract_months + 1)
+        // For example: If contract_months = 10, then appointments will be #1 (initial), #2 through #11 (treatment)
         if (patientData && patientData.current_contract_months) {
           // Get the highest appointment number in this treatment cycle
           const maxApptStmt = db.prepare(`
@@ -537,8 +539,10 @@ export function addOrthodonticTreatmentRecord(
             record.treatment_cycle || patientData.treatment_cycle
           ) as { max_appt_no: number } | undefined;
 
-          // If the highest appointment number is equal to or greater than (contract_months + 1),
-          // mark the treatment as completed
+          // Count the number of actual treatment appointments (excluding the initial consultation)
+          // If appt_no is 1, it's the initial consultation
+          // If appt_no >= 2, it counts toward the contract duration
+          // So we need to check if max_appt_no >= (contract_months + 1)
           if (
             maxApptResult &&
             maxApptResult.max_appt_no !== null &&
@@ -1346,6 +1350,39 @@ export function updateOrthodonticContractDetails(
           patientId,
           patientData.treatment_cycle
         );
+      }
+
+      // If contract months were updated, check if the treatment should be marked as completed
+      if (contractMonths !== undefined) {
+        // Get the highest appointment number in this treatment cycle
+        const maxApptStmt = db.prepare(`
+          SELECT MAX(CAST(appt_no AS INTEGER)) as max_appt_no
+          FROM orthodontic_treatment_records
+          WHERE patient_id = ? AND treatment_cycle = ?
+        `);
+
+        const maxApptResult = maxApptStmt.get(
+          patientId,
+          patientData.treatment_cycle
+        ) as { max_appt_no: number } | undefined;
+
+        // Check if the highest appointment number meets or exceeds the new contract duration + 1
+        // Note: Appointment #1 is just the initial consultation and doesn't count toward the contract duration
+        // The contract duration starts counting from appointment #2
+        if (
+          maxApptResult &&
+          maxApptResult.max_appt_no !== null &&
+          contractMonths !== undefined &&
+          maxApptResult.max_appt_no >= contractMonths + 1
+        ) {
+          const updateStatusStmt = db.prepare(`
+            UPDATE orthodontic_patients
+            SET treatment_status = 'Completed'
+            WHERE patient_id = ?
+          `);
+
+          updateStatusStmt.run(patientId);
+        }
       }
 
       // Commit the transaction

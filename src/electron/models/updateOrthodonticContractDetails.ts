@@ -35,7 +35,7 @@ export function updateOrthodonticContractDetails(
     try {
       // Get current patient details
       const getPatientStmt = db.prepare(`
-        SELECT current_contract_price, current_balance, treatment_cycle 
+        SELECT current_contract_price, current_balance, treatment_cycle
         FROM orthodontic_patients
         WHERE patient_id = ?
       `);
@@ -96,6 +96,39 @@ export function updateOrthodonticContractDetails(
           patientId,
           patientData.treatment_cycle
         );
+      }
+
+      // If contract months were updated, check if the treatment should be marked as completed
+      if (contractMonths !== undefined) {
+        // Get the highest appointment number in this treatment cycle
+        const maxApptStmt = db.prepare(`
+          SELECT MAX(CAST(appt_no AS INTEGER)) as max_appt_no
+          FROM orthodontic_treatment_records
+          WHERE patient_id = ? AND treatment_cycle = ?
+        `);
+
+        const maxApptResult = maxApptStmt.get(
+          patientId,
+          patientData.treatment_cycle
+        ) as { max_appt_no: number } | undefined;
+
+        // Check if the highest appointment number meets or exceeds the new contract duration + 1
+        // Note: Appointment #1 is just the initial consultation and doesn't count toward the contract duration
+        // The contract duration starts counting from appointment #2
+        if (
+          maxApptResult &&
+          maxApptResult.max_appt_no !== null &&
+          contractMonths !== undefined &&
+          maxApptResult.max_appt_no >= contractMonths + 1
+        ) {
+          const updateStatusStmt = db.prepare(`
+            UPDATE orthodontic_patients
+            SET treatment_status = 'Completed'
+            WHERE patient_id = ?
+          `);
+
+          updateStatusStmt.run(patientId);
+        }
       }
 
       // Commit the transaction
