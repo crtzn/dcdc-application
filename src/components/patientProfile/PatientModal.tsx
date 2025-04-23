@@ -1734,10 +1734,6 @@ const PatientDetailsModal = ({
                 Treatment Cycle #{orthoPatient.treatment_cycle || 1} -{" "}
                 {orthoPatient.treatment_status || "Not Started"}
               </h3>
-              <p className="text-xs text-gray-500 mt-1">
-                Treatment status will be marked as "Completed" when appointment
-                #{(orthoPatient.current_contract_months || 0) + 1} is reached.
-              </p>
             </div>
             <div className="flex gap-2">
               {orthoPatient.treatment_status === "In Progress" && (

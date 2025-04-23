@@ -47,7 +47,7 @@ const newCycleSchema = z.object({
   procedure: z.string().optional(),
   appliances: z.string().optional(),
   amount_paid: z.number().min(0, "Amount paid must be positive").optional(),
-  mode_of_payment: z.string().default("Cash"),
+  mode_of_payment: z.string(),
   next_schedule: z.string().optional(),
 });
 
@@ -246,14 +246,14 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
               <FormField
                 control={form.control}
                 name="treatment_date"
-                render={({ field }) => (
+                render={() => (
                   <FormItem className="flex flex-col space-y-1.5">
                     <FormLabel className="text-gray-700 font-medium">
                       Treatment Date <span className="text-red-500">*</span>
                     </FormLabel>
                     <Popover
                       open={treatmentDatePopover.open}
-                      onOpenChange={treatmentDatePopover.setOpen}
+                      onOpenChange={treatmentDatePopover.onOpenChange}
                     >
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -280,7 +280,7 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
                           selected={treatmentDate}
                           onSelect={(date) => {
                             setTreatmentDate(date);
-                            treatmentDatePopover.setOpen(false);
+                            treatmentDatePopover.onSelect()();
                           }}
                           initialFocus
                         />
@@ -436,14 +436,14 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
               <FormField
                 control={form.control}
                 name="next_schedule"
-                render={({ field }) => (
+                render={() => (
                   <FormItem className="flex flex-col space-y-1.5">
                     <FormLabel className="text-gray-700 font-medium">
                       Next Schedule
                     </FormLabel>
                     <Popover
                       open={nextSchedulePopover.open}
-                      onOpenChange={nextSchedulePopover.setOpen}
+                      onOpenChange={nextSchedulePopover.onOpenChange}
                     >
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -470,7 +470,7 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
                           selected={nextScheduleDate}
                           onSelect={(date) => {
                             setNextScheduleDate(date);
-                            nextSchedulePopover.setOpen(false);
+                            nextSchedulePopover.onSelect()();
                           }}
                           initialFocus
                         />
