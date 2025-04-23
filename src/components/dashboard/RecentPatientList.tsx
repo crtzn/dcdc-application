@@ -18,7 +18,7 @@ interface Patient {
   type: "Regular" | "Ortho";
   sex: string;
   age: number;
-  created_at: string;
+  registration_date: string;
 }
 
 const RecentPatientsList: React.FC = () => {

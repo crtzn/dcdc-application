@@ -242,7 +242,7 @@ const PatientDetailsModal = ({
             { key: "created_at", label: "Created At" },
           ]
         : [
-            { key: "date_of_exam", label: "Date of Exam" },
+            { key: "registration_date", label: "Registration Date" },
             { key: "name", label: "Name" },
             { key: "occupation", label: "Occupation" },
             { key: "birthday", label: "Birthday" },
@@ -1016,7 +1016,7 @@ const PatientDetailsModal = ({
             { key: "created_at", label: "Created At" },
           ]
         : [
-            { key: "date_of_exam", label: "Date of Exam" },
+            { key: "registration_date", label: "Registration Date" },
             { key: "name", label: "Name" },
             { key: "occupation", label: "Occupation" },
             { key: "birthday", label: "Birthday" },

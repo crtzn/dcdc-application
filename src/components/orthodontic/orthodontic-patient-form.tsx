@@ -36,7 +36,7 @@ import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 
 const patientSchema = z.object({
-  date_of_exam: z.string().min(1, "Date of exam is required"),
+  registration_date: z.string().min(1, "Registration date is required"),
   name: z.string().min(1, "Name is required"),
   occupation: z.string().optional(),
   birthday: z.string().optional(),
@@ -103,7 +103,7 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
-      date_of_exam: initialData.date_of_exam || currentDate,
+      registration_date: initialData.registration_date || currentDate,
       name: initialData.name || "",
       occupation: initialData.occupation || "",
       birthday: initialData.birthday || "",
@@ -203,11 +203,11 @@ const OrthodonticPatientForm: React.FC<OrthodonticPatientFormProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField
               control={form.control}
-              name="date_of_exam"
+              name="registration_date"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs font-medium text-gray-700 sm:text-sm">
-                    Date of Exam <RequiredIndicator />
+                    Registration Date <RequiredIndicator />
                   </FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>

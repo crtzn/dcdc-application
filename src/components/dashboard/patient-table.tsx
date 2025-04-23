@@ -19,7 +19,7 @@ interface Patient {
   type: "Regular" | "Ortho";
   sex: string;
   age: number;
-  created_at: string;
+  registration_date: string;
 }
 
 const RecentAddPatientTable = () => {
@@ -104,7 +104,7 @@ const RecentAddPatientTable = () => {
                   <TableHead>Type</TableHead>
                   <TableHead>Gender</TableHead>
                   <TableHead>Age</TableHead>
-                  <TableHead>Date Added</TableHead>
+                  <TableHead>Registration Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -118,7 +118,10 @@ const RecentAddPatientTable = () => {
                     <TableCell>{patient.sex}</TableCell>
                     <TableCell>{patient.age}</TableCell>
                     <TableCell>
-                      {format(new Date(patient.created_at), "MMM dd, yyyy")}
+                      {format(
+                        new Date(patient.registration_date),
+                        "MMM dd, yyyy"
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

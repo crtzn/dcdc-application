@@ -100,7 +100,7 @@ function initializeDatabase() {
     db.exec(`
       CREATE TABLE IF NOT EXISTS orthodontic_patients (
         patient_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date_of_exam TEXT,
+        registration_date TEXT,
         name TEXT NOT NULL UNIQUE,
         occupation TEXT,
         birthday TEXT,
@@ -145,6 +145,7 @@ function initializeDatabase() {
         amount_paid REAL,
         next_schedule TEXT,
         mode_of_payment TEXT,
+        balance REAL,
         FOREIGN KEY (patient_id) REFERENCES orthodontic_patients(patient_id)
       )
     `);
@@ -352,7 +353,7 @@ export function addOrthodonticPatient(
     }
     const stmt = db.prepare(`
       INSERT INTO orthodontic_patients (
-        date_of_exam, name, occupation, birthday, parent_guardian_name, address,
+        registration_date, name, occupation, birthday, parent_guardian_name, address,
         telephone_home, telephone_business, cellphone_number, email, chart, sex, age,
         chief_complaint, past_medical_dental_history, prior_orthodontic_history,
         under_treatment_or_medication, congenital_abnormalities, temporomandibular_joint_problems,
@@ -361,7 +362,7 @@ export function addOrthodonticPatient(
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = stmt.run(
-      patient.date_of_exam || null,
+      patient.registration_date || null,
       patient.name,
       patient.occupation || null,
       patient.birthday || null,
@@ -647,18 +648,18 @@ export function getRecentPatients(limit = 5): {
     type: "Regular" | "Ortho";
     sex: string;
     age: number;
-    created_at: string;
+    registration_date: string;
   }>;
   error?: string;
 } {
   try {
     const query = `
-      SELECT name, 'Regular' as type, sex, age, created_at
+      SELECT name, 'Regular' as type, sex, age, registration_date
       FROM regular_patients
       UNION ALL
-      SELECT name, 'Ortho' as type, sex, age, created_at
+      SELECT name, 'Ortho' as type, sex, age, registration_date
       FROM orthodontic_patients
-      ORDER BY created_at DESC
+      ORDER BY registration_date DESC
       LIMIT ?
     `;
     const stmt = db.prepare(query);
@@ -667,7 +668,7 @@ export function getRecentPatients(limit = 5): {
       type: "Regular" | "Ortho";
       sex: string;
       age: number;
-      created_at: string;
+      registration_date: string;
     }>;
 
     console.log(`Fetched ${results.length} recent patients`);
@@ -690,7 +691,7 @@ export function getFilteredPatients(
   searchName = "",
   typeFilter = "All",
   genderFilter = "All",
-  sortBy = "created_at",
+  sortBy = "registration_date",
   sortDirection = "DESC"
 ): {
   success: boolean;
@@ -700,14 +701,14 @@ export function getFilteredPatients(
     type: "Regular" | "Ortho";
     sex: string;
     age: number;
-    created_at: string;
+    registration_date: string;
   }>;
   error?: string;
 } {
   try {
     // Build the query with proper filtering for both tables
-    let regularQuery = `SELECT patient_id, name, 'Regular' as type, sex, age, created_at FROM regular_patients WHERE 1=1`;
-    let orthoQuery = `SELECT patient_id, name, 'Ortho' as type, sex, age, created_at FROM orthodontic_patients WHERE 1=1`;
+    let regularQuery = `SELECT patient_id, name, 'Regular' as type, sex, age, registration_date FROM regular_patients WHERE 1=1`;
+    let orthoQuery = `SELECT patient_id, name, 'Ortho' as type, sex, age, registration_date FROM orthodontic_patients WHERE 1=1`;
 
     const params: (string | number)[] = [];
     const orthoParams: (string | number)[] = [];
@@ -743,10 +744,16 @@ export function getFilteredPatients(
     }
 
     // Sorting
-    const validSortColumns = ["name", "type", "sex", "age", "created_at"];
+    const validSortColumns = [
+      "name",
+      "type",
+      "sex",
+      "age",
+      "registration_date",
+    ];
     const sortColumn = validSortColumns.includes(sortBy)
       ? sortBy
-      : "created_at";
+      : "registration_date";
     const direction = sortDirection === "ASC" ? "ASC" : "DESC";
     finalQuery += ` ORDER BY ${sortColumn} ${direction}`;
 
@@ -759,7 +766,7 @@ export function getFilteredPatients(
       type: "Regular" | "Ortho";
       sex: string;
       age: number;
-      created_at: string;
+      registration_date: string;
     }>;
 
     console.log(`Fetched ${results.length} patients with filters`);
@@ -849,7 +856,7 @@ export function getPatientDetails(
     } else if (type === "Ortho") {
       // Fetch patient info
       const infoStmt = db.prepare(`
-        SELECT patient_id, date_of_exam, name, occupation, birthday, parent_guardian_name,
+        SELECT patient_id, registration_date, name, occupation, birthday, parent_guardian_name,
                address, telephone_home, telephone_business, cellphone_number, email,
                chart, sex, age, chief_complaint, past_medical_dental_history,
                prior_orthodontic_history, under_treatment_or_medication,
@@ -869,7 +876,7 @@ export function getPatientDetails(
       // Fetch treatment records
       const recordsStmt = db.prepare(`
         SELECT record_id, patient_id, treatment_cycle, appt_no, date, arch_wire, procedure,
-               contract_price, contract_months, amount_paid, mode_of_payment, next_schedule
+               contract_price, contract_months, amount_paid, mode_of_payment, next_schedule, balance
         FROM orthodontic_treatment_records
         WHERE patient_id = ?
         ORDER BY date DESC
@@ -1477,13 +1484,13 @@ export function getMonthlyPatientCounts(): {
   try {
     const query = `
       SELECT
-        strftime('%Y', created_at) as year,
-        strftime('%m', created_at) as month,
+        strftime('%Y', registration_date) as year,
+        strftime('%m', registration_date) as month,
         COUNT(*) as count
       FROM (
-        SELECT created_at FROM regular_patients
+        SELECT registration_date FROM regular_patients
         UNION ALL
-        SELECT created_at FROM orthodontic_patients
+        SELECT registration_date FROM orthodontic_patients
       )
       GROUP BY year, month
       ORDER BY year DESC, month DESC

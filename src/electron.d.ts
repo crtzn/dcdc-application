@@ -51,7 +51,7 @@ interface ElectronAPI {
       type: "Regular" | "Ortho";
       sex: string;
       age: number;
-      created_at: string;
+      registration_date: string;
     }>;
     error?: string;
   }>;
@@ -69,7 +69,7 @@ interface ElectronAPI {
       type: "Regular" | "Ortho";
       sex: string;
       age: number;
-      created_at: string;
+      registration_date: string;
     }>;
     error?: string;
   }>;

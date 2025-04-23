@@ -77,8 +77,12 @@ const OrthodonticPatientEditForm = ({
       className="space-y-4 max-h-[60vh] overflow-y-auto p-2"
     >
       <div>
-        <Label htmlFor="date_of_exam">Date of Exam</Label>
-        <Input id="date_of_exam" type="date" {...register("date_of_exam")} />
+        <Label htmlFor="registration_date">Registration Date</Label>
+        <Input
+          id="registration_date"
+          type="date"
+          {...register("registration_date")}
+        />
       </div>
       <div>
         <Label htmlFor="name">Name</Label>

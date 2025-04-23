@@ -1,6 +1,6 @@
 export interface OrthodonticPatient {
   patient_id?: number;
-  date_of_exam: string;
+  registration_date: string;
   name: string;
   occupation?: string;
   birthday?: string;

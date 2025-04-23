@@ -41,7 +41,7 @@ interface Patient {
   type: "Regular" | "Ortho";
   sex: string;
   age: number;
-  created_at: string;
+  registration_date: string;
 }
 
 const PatientList = () => {
@@ -51,7 +51,7 @@ const PatientList = () => {
   const [searchName, setSearchName] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [genderFilter, setGenderFilter] = useState("All");
-  const [sortBy, setSortBy] = useState("created_at");
+  const [sortBy, setSortBy] = useState("registration_date");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [selectedPatient, setSelectedPatient] = useState<{
     info: RegularPatient | OrthodonticPatient;
@@ -175,7 +175,7 @@ const PatientList = () => {
   };
 
   const resetSort = () => {
-    setSortBy("created_at");
+    setSortBy("registration_date");
     setSortDirection("DESC");
   };
 
@@ -331,11 +331,11 @@ const PatientList = () => {
                     </TableHead>
                     <TableHead
                       className="cursor-pointer hover:bg-gray-100 transition-colors font-medium"
-                      onClick={() => handleSort("created_at")}
+                      onClick={() => handleSort("registration_date")}
                     >
                       <div className="flex items-center">
                         Date Added
-                        {sortBy === "created_at" && (
+                        {sortBy === "registration_date" && (
                           <ArrowUpDown className="ml-1 h-4 w-4" />
                         )}
                       </div>
@@ -363,8 +363,11 @@ const PatientList = () => {
                       <TableCell>{patient.sex || "N/A"}</TableCell>
                       <TableCell>{patient.age || "N/A"}</TableCell>
                       <TableCell>
-                        {patient.created_at
-                          ? format(new Date(patient.created_at), "MMM dd, yyyy")
+                        {patient.registration_date
+                          ? format(
+                              new Date(patient.registration_date),
+                              "MMM dd, yyyy"
+                            )
                           : "N/A"}
                       </TableCell>
                     </TableRow>
