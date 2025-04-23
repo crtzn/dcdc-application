@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import path from "path";
 import { isDev } from "./util.js";
 import { getPreloadPath } from "./pathResolver.js";
+import fs from "fs";
 import {
   addPatient,
   addTreatmentRecord,
@@ -30,6 +31,19 @@ import {
   deleteOrthodonticPatient,
 } from "./models/tstmgr.js";
 import {
+  createBackup,
+  listBackups,
+  restoreFromBackup,
+  deleteBackup,
+  setupAutomaticBackups,
+  checkAutomaticBackup,
+  performAutomaticBackupIfDue,
+  exportDatabaseToJson,
+  importDatabaseFromJson,
+  exportDatabaseFile,
+  importDatabaseFile,
+} from "./models/backup.js";
+import {
   RegularPatient,
   RegularMedicalHistory,
   RegularTreatmentRecord,
@@ -39,6 +53,9 @@ import {
   OrthodonticPatient,
   OrthodonticTreatmentRecord,
 } from "./types/OrthodonticPatient.js";
+
+// Check for automatic backup on startup
+let backupCheckInterval: NodeJS.Timeout | null = null;
 
 app.on("ready", () => {
   const mainWindow = new BrowserWindow({
@@ -60,6 +77,21 @@ app.on("ready", () => {
     mainWindow.loadURL("http://localhost:5123");
   } else {
     mainWindow.loadFile(path.join(app.getAppPath() + "/dist-react/index.html"));
+  }
+
+  // Perform automatic backup check on startup
+  performAutomaticBackupIfDue();
+
+  // Set up interval to check for automatic backups
+  backupCheckInterval = setInterval(() => {
+    performAutomaticBackupIfDue();
+  }, 60 * 60 * 1000); // Check every hour
+});
+
+// Clean up interval on app quit
+app.on("quit", () => {
+  if (backupCheckInterval) {
+    clearInterval(backupCheckInterval);
   }
 });
 
@@ -466,3 +498,154 @@ ipcMain.handle(
     }
   }
 );
+
+// Backup system handlers
+ipcMain.handle("create-backup", async (_event, customPath?: string) => {
+  try {
+    return await createBackup(customPath);
+  } catch (error) {
+    console.error("IPC create-backup error:", error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle("list-backups", async (_event, customPath?: string) => {
+  try {
+    return await listBackups(customPath);
+  } catch (error) {
+    console.error("IPC list-backups error:", error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle("restore-from-backup", async (_event, backupPath: string) => {
+  try {
+    return await restoreFromBackup(backupPath);
+  } catch (error) {
+    console.error("IPC restore-from-backup error:", error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle("delete-backup", async (_event, backupPath: string) => {
+  try {
+    return await deleteBackup(backupPath);
+  } catch (error) {
+    console.error("IPC delete-backup error:", error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle(
+  "setup-automatic-backups",
+  async (
+    _event,
+    intervalHours: number,
+    maxBackups: number,
+    customPath?: string
+  ) => {
+    try {
+      return await setupAutomaticBackups(intervalHours, maxBackups, customPath);
+    } catch (error) {
+      console.error("IPC setup-automatic-backups error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+ipcMain.handle("get-backup-settings", async () => {
+  try {
+    const settingsPath = path.join(
+      app.getPath("userData"),
+      "backup_settings.json"
+    );
+    if (fs.existsSync(settingsPath)) {
+      const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+      return settings;
+    }
+    return null;
+  } catch (error) {
+    console.error("IPC get-backup-settings error:", error);
+    return null;
+  }
+});
+
+ipcMain.handle(
+  "export-database-to-json",
+  async (_event, outputPath?: string) => {
+    try {
+      return await exportDatabaseToJson(outputPath);
+    } catch (error) {
+      console.error("IPC export-database-to-json error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+ipcMain.handle(
+  "import-database-from-json",
+  async (_event, jsonFilePath: string) => {
+    try {
+      return await importDatabaseFromJson(jsonFilePath);
+    } catch (error) {
+      console.error("IPC import-database-from-json error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+ipcMain.handle("export-database-file", async (_event, outputPath: string) => {
+  try {
+    return await exportDatabaseFile(outputPath);
+  } catch (error) {
+    console.error("IPC export-database-file error:", error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle(
+  "import-database-file",
+  async (_event, importFilePath: string) => {
+    try {
+      return await importDatabaseFile(importFilePath);
+    } catch (error) {
+      console.error("IPC import-database-file error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+// File dialog handlers
+ipcMain.handle("select-directory", async () => {
+  try {
+    return await dialog.showOpenDialog({
+      properties: ["openDirectory"],
+      title: "Select Backup Directory",
+    });
+  } catch (error) {
+    console.error("IPC select-directory error:", error);
+    return null;
+  }
+});
+
+ipcMain.handle("select-file", async (_event, options: any) => {
+  try {
+    return await dialog.showOpenDialog({
+      properties: ["openFile"],
+      ...options,
+    });
+  } catch (error) {
+    console.error("IPC select-file error:", error);
+    return null;
+  }
+});
+
+ipcMain.handle("select-save-file-path", async (_event, options: any) => {
+  try {
+    const result = await dialog.showSaveDialog(options);
+    return result;
+  } catch (error) {
+    console.error("IPC select-save-file-path error:", error);
+    return null;
+  }
+});

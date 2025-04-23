@@ -157,6 +157,78 @@ interface ElectronAPI {
     patientId: number
   ) => Promise<{ success: boolean; error?: string }>;
   onPatientDeleted: (callback: () => void) => () => void;
+
+  // Backup system functions
+  createBackup: (customPath?: string) => Promise<{
+    success: boolean;
+    backupPath?: string;
+    error?: string;
+  }>;
+  listBackups: (customPath?: string) => Promise<{
+    success: boolean;
+    backups?: Array<{
+      filename: string;
+      path: string;
+      size: number;
+      date: Date;
+    }>;
+    error?: string;
+  }>;
+  restoreFromBackup: (backupPath: string) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  deleteBackup: (backupPath: string) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  setupAutomaticBackups: (
+    intervalHours: number,
+    maxBackups: number,
+    customPath?: string
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  getBackupSettings: () => Promise<{
+    intervalHours: number;
+    maxBackups: number;
+    customPath?: string;
+    lastBackup: string;
+    enabled: boolean;
+  } | null>;
+  exportDatabaseToJson: (outputPath?: string) => Promise<{
+    success: boolean;
+    filePath?: string;
+    error?: string;
+  }>;
+  importDatabaseFromJson: (jsonFilePath: string) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  exportDatabaseFile: (outputPath: string) => Promise<{
+    success: boolean;
+    filePath?: string;
+    error?: string;
+  }>;
+  importDatabaseFile: (importFilePath: string) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+
+  // File dialog functions
+  selectDirectory: () => Promise<{
+    canceled: boolean;
+    filePaths: string[];
+  } | null>;
+  selectFile: (options: any) => Promise<{
+    canceled: boolean;
+    filePaths: string[];
+  } | null>;
+  selectSaveFilePath: (options: any) => Promise<{
+    canceled: boolean;
+    filePath?: string;
+  } | null>;
 }
 
 declare global {

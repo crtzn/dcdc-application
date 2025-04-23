@@ -131,4 +131,40 @@ electron.contextBridge.exposeInMainWorld("api", {
     ipcRenderer.on("patient-deleted", callback);
     return () => ipcRenderer.removeListener("patient-deleted", callback);
   },
+
+  // Backup system functions
+  createBackup: (customPath?: string) =>
+    ipcRenderer.invoke("create-backup", customPath),
+  listBackups: (customPath?: string) =>
+    ipcRenderer.invoke("list-backups", customPath),
+  restoreFromBackup: (backupPath: string) =>
+    ipcRenderer.invoke("restore-from-backup", backupPath),
+  deleteBackup: (backupPath: string) =>
+    ipcRenderer.invoke("delete-backup", backupPath),
+  setupAutomaticBackups: (
+    intervalHours: number,
+    maxBackups: number,
+    customPath?: string
+  ) =>
+    ipcRenderer.invoke(
+      "setup-automatic-backups",
+      intervalHours,
+      maxBackups,
+      customPath
+    ),
+  getBackupSettings: () => ipcRenderer.invoke("get-backup-settings"),
+  exportDatabaseToJson: (outputPath?: string) =>
+    ipcRenderer.invoke("export-database-to-json", outputPath),
+  importDatabaseFromJson: (jsonFilePath: string) =>
+    ipcRenderer.invoke("import-database-from-json", jsonFilePath),
+  exportDatabaseFile: (outputPath: string) =>
+    ipcRenderer.invoke("export-database-file", outputPath),
+  importDatabaseFile: (importFilePath: string) =>
+    ipcRenderer.invoke("import-database-file", importFilePath),
+
+  // File dialog functions
+  selectDirectory: () => ipcRenderer.invoke("select-directory"),
+  selectFile: (options: any) => ipcRenderer.invoke("select-file", options),
+  selectSaveFilePath: (options: any) =>
+    ipcRenderer.invoke("select-save-file-path", options),
 });
