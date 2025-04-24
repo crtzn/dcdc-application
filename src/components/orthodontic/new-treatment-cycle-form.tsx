@@ -87,7 +87,7 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
       arch_wire: "",
       procedure: "",
       appliances: "",
-      amount_paid: 0,
+      amount_paid: undefined,
       mode_of_payment: "Cash",
       next_schedule: "",
     },
@@ -194,11 +194,13 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
                         placeholder="Enter contract price"
                         className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                         {...field}
-                        onChange={(e) =>
+                        value={field.value === undefined ? "" : field.value}
+                        onChange={(e) => {
+                          const value = e.target.value;
                           field.onChange(
-                            parseFloat(e.target.value) || undefined
-                          )
-                        }
+                            value === "" ? undefined : parseFloat(value)
+                          );
+                        }}
                       />
                     </FormControl>
                     <FormDescription className="text-xs text-gray-500">
@@ -224,9 +226,13 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
                         placeholder="Enter duration in months"
                         className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                         {...field}
-                        onChange={(e) =>
-                          field.onChange(parseInt(e.target.value) || undefined)
-                        }
+                        value={field.value === undefined ? "" : field.value}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(
+                            value === "" ? undefined : parseInt(value)
+                          );
+                        }}
                       />
                     </FormControl>
                     <FormDescription className="text-xs text-gray-500">
@@ -388,9 +394,13 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
                         placeholder="Enter amount paid"
                         className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                         {...field}
-                        onChange={(e) =>
-                          field.onChange(parseFloat(e.target.value) || 0)
-                        }
+                        value={field.value === undefined ? "" : field.value}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(
+                            value === "" ? undefined : parseFloat(value)
+                          );
+                        }}
                       />
                     </FormControl>
                     <FormMessage className="text-red-500 text-xs" />

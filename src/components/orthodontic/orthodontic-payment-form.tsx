@@ -205,13 +205,12 @@ const OrthodonticPaymentForm = ({
                       className="border-gray-300 focus:ring-blue-500"
                       {...field}
                       value={field.value === undefined ? "" : field.value}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const value = e.target.value;
                         field.onChange(
-                          e.target.value
-                            ? parseFloat(e.target.value)
-                            : undefined
-                        )
-                      }
+                          value === "" ? undefined : parseFloat(value)
+                        );
+                      }}
                     />
                   </FormControl>
                   <FormMessage className="text-red-500 text-xs" />

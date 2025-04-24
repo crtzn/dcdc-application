@@ -156,9 +156,12 @@ const UpdateContractForm: React.FC<UpdateContractFormProps> = ({
                       className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                       {...field}
                       value={field.value === undefined ? "" : field.value}
-                      onChange={(e) =>
-                        field.onChange(parseFloat(e.target.value) || undefined)
-                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(
+                          value === "" ? undefined : parseFloat(value)
+                        );
+                      }}
                     />
                   </FormControl>
                   <FormDescription className="text-xs text-gray-500">
@@ -192,9 +195,12 @@ const UpdateContractForm: React.FC<UpdateContractFormProps> = ({
                       className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                       {...field}
                       value={field.value === undefined ? "" : field.value}
-                      onChange={(e) =>
-                        field.onChange(parseInt(e.target.value) || undefined)
-                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(
+                          value === "" ? undefined : parseInt(value)
+                        );
+                      }}
                     />
                   </FormControl>
                   <FormDescription className="text-xs text-gray-500">

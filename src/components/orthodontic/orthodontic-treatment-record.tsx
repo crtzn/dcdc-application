@@ -98,7 +98,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
       appliances: "",
       contract_price: undefined,
       contract_months: undefined,
-      amount_paid: 0, // Default value of 0
+      amount_paid: undefined, // No default value
       next_schedule: "",
       mode_of_payment: "Cash", // Default to Cash as per user preference
       treatment_cycle: 1,
@@ -444,11 +444,13 @@ const OrthodonticTreatmentRecordForm: React.FC<
                             placeholder="Enter contract price"
                             className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                             {...field}
-                            onChange={(e) =>
+                            value={field.value === undefined ? "" : field.value}
+                            onChange={(e) => {
+                              const value = e.target.value;
                               field.onChange(
-                                parseFloat(e.target.value) || undefined
-                              )
-                            }
+                                value === "" ? undefined : parseFloat(value)
+                              );
+                            }}
                           />
                         </FormControl>
                         <FormDescription className="text-xs text-gray-500">
@@ -473,11 +475,13 @@ const OrthodonticTreatmentRecordForm: React.FC<
                             placeholder="Enter duration in months"
                             className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                             {...field}
-                            onChange={(e) =>
+                            value={field.value === undefined ? "" : field.value}
+                            onChange={(e) => {
+                              const value = e.target.value;
                               field.onChange(
-                                parseInt(e.target.value) || undefined
-                              )
-                            }
+                                value === "" ? undefined : parseInt(value)
+                              );
+                            }}
                           />
                         </FormControl>
                         <FormDescription className="text-xs text-gray-500">
@@ -511,11 +515,13 @@ const OrthodonticTreatmentRecordForm: React.FC<
                           placeholder="Enter amount paid"
                           className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                           {...field}
-                          onChange={(e) =>
+                          value={field.value === undefined ? "" : field.value}
+                          onChange={(e) => {
+                            const value = e.target.value;
                             field.onChange(
-                              parseFloat(e.target.value) || undefined
-                            )
-                          }
+                              value === "" ? undefined : parseFloat(value)
+                            );
+                          }}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 text-xs" />
