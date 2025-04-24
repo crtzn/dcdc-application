@@ -132,6 +132,7 @@ const BackupManager = () => {
         setBackupSettings(settings);
         if (settings.customPath) {
           setCustomPath(settings.customPath);
+          setBackupPath(settings.customPath); // Also set backupPath for the Create Backup tab
         }
       }
     } catch (error) {
@@ -145,6 +146,32 @@ const BackupManager = () => {
       const result = await window.api.createBackup(backupPath || undefined);
       if (result.success) {
         toast.success("Backup created successfully");
+
+        // Apply maximum backups limit after creating a new backup
+        if (backupSettings.maxBackups > 0) {
+          const backupDir = backupPath || customPath || undefined;
+          const listResult = await window.api.listBackups(backupDir);
+
+          if (
+            listResult.success &&
+            listResult.backups &&
+            listResult.backups.length > backupSettings.maxBackups
+          ) {
+            // Delete oldest backups to maintain max count
+            const backupsToDelete = listResult.backups.slice(
+              backupSettings.maxBackups
+            );
+
+            for (const backup of backupsToDelete) {
+              await window.api.deleteBackup(backup.path);
+            }
+
+            toast.info(
+              `Removed ${backupsToDelete.length} old backup(s) to maintain limit of ${backupSettings.maxBackups}`
+            );
+          }
+        }
+
         loadBackups();
       } else {
         toast.error(result.error || "Failed to create backup");
