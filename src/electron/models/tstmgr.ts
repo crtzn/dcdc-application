@@ -1589,6 +1589,239 @@ export function deleteOrthodonticPatient(patientId: number): {
   }
 }
 
+// Update regular treatment record
+export function updateRegularTreatmentRecord(
+  recordId: number,
+  record: Partial<Omit<RegularTreatmentRecord, "record_id" | "patient_id">>
+): {
+  success: boolean;
+  error?: string;
+} {
+  try {
+    // Begin transaction
+    db.prepare("BEGIN TRANSACTION").run();
+
+    try {
+      // Create the SET clause for the SQL query
+      const fields = Object.keys(record)
+        .map((key) => `${key} = ?`)
+        .join(", ");
+
+      // If no fields to update, return early
+      if (!fields) {
+        return { success: false, error: "No fields to update" };
+      }
+
+      // Get the values to update
+      const values = Object.values(record);
+
+      // Update the treatment record
+      const stmt = db.prepare(`
+        UPDATE regular_treatment_records
+        SET ${fields}
+        WHERE record_id = ?
+      `);
+
+      stmt.run(...values, recordId);
+
+      // Commit the transaction
+      db.prepare("COMMIT").run();
+
+      return { success: true };
+    } catch (error) {
+      // If any error occurs, roll back the transaction
+      db.prepare("ROLLBACK").run();
+      throw error;
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error updating regular treatment record:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+// Update orthodontic treatment record
+export function updateOrthodonticTreatmentRecord(
+  recordId: number,
+  record: Partial<Omit<OrthodonticTreatmentRecord, "record_id" | "patient_id">>
+): {
+  success: boolean;
+  error?: string;
+} {
+  try {
+    // Begin transaction
+    db.prepare("BEGIN TRANSACTION").run();
+
+    try {
+      // Get the current record to check if we're updating the first appointment
+      const getRecordStmt = db.prepare(`
+        SELECT patient_id, treatment_cycle, appt_no, contract_price, contract_months, amount_paid
+        FROM orthodontic_treatment_records
+        WHERE record_id = ?
+      `);
+
+      const currentRecord = getRecordStmt.get(recordId) as
+        | {
+            patient_id: number;
+            treatment_cycle: number;
+            appt_no: string;
+            contract_price: number | null;
+            contract_months: number | null;
+            amount_paid: number | null;
+          }
+        | undefined;
+
+      if (!currentRecord) {
+        throw new Error("Treatment record not found");
+      }
+
+      // Create the SET clause for the SQL query
+      const fields = Object.keys(record)
+        .map((key) => `${key} = ?`)
+        .join(", ");
+
+      // If no fields to update, return early
+      if (!fields) {
+        return { success: false, error: "No fields to update" };
+      }
+
+      // Get the values to update
+      const values = Object.values(record);
+
+      // Update the treatment record
+      const stmt = db.prepare(`
+        UPDATE orthodontic_treatment_records
+        SET ${fields}
+        WHERE record_id = ?
+      `);
+
+      stmt.run(...values, recordId);
+
+      // If this is the first appointment (appt_no = 1) and we're updating contract details
+      if (
+        currentRecord.appt_no === "1" &&
+        (record.contract_price !== undefined ||
+          record.contract_months !== undefined)
+      ) {
+        // Get the patient data
+        const getPatientStmt = db.prepare(`
+          SELECT current_contract_price, current_balance
+          FROM orthodontic_patients
+          WHERE patient_id = ?
+        `);
+
+        const patientData = getPatientStmt.get(currentRecord.patient_id) as
+          | {
+              current_contract_price: number;
+              current_balance: number;
+            }
+          | undefined;
+
+        if (patientData) {
+          // Calculate new contract price and months
+          const newContractPrice =
+            record.contract_price !== undefined
+              ? record.contract_price
+              : currentRecord.contract_price;
+
+          const newContractMonths =
+            record.contract_months !== undefined
+              ? record.contract_months
+              : currentRecord.contract_months;
+
+          // Calculate new balance if contract price is changing
+          let newBalance = patientData.current_balance;
+          if (
+            record.contract_price !== undefined &&
+            patientData.current_contract_price !== null
+          ) {
+            // Calculate how much has been paid so far
+            const paidSoFar =
+              patientData.current_contract_price - patientData.current_balance;
+            // New balance is new price minus amount already paid
+            newBalance = Math.max(0, record.contract_price - paidSoFar);
+          }
+
+          // Update the patient record with new contract details
+          const updatePatientStmt = db.prepare(`
+            UPDATE orthodontic_patients
+            SET current_contract_price = ?,
+                current_contract_months = ?,
+                current_balance = ?
+            WHERE patient_id = ?
+          `);
+
+          updatePatientStmt.run(
+            newContractPrice,
+            newContractMonths,
+            newBalance,
+            currentRecord.patient_id
+          );
+        }
+      }
+
+      // If we're updating the amount paid, update the patient's balance
+      if (record.amount_paid !== undefined) {
+        // Get the patient data
+        const getPatientStmt = db.prepare(`
+          SELECT current_balance
+          FROM orthodontic_patients
+          WHERE patient_id = ?
+        `);
+
+        const patientData = getPatientStmt.get(currentRecord.patient_id) as
+          | {
+              current_balance: number;
+            }
+          | undefined;
+
+        if (patientData && patientData.current_balance !== null) {
+          // Calculate the payment difference
+          const paymentDifference =
+            (record.amount_paid || 0) - (currentRecord.amount_paid || 0);
+
+          // Only update if there's a difference in payment
+          if (paymentDifference !== 0) {
+            // Calculate new balance
+            const newBalance = Math.max(
+              0,
+              patientData.current_balance - paymentDifference
+            );
+
+            // Update the patient's balance
+            const updateBalanceStmt = db.prepare(`
+              UPDATE orthodontic_patients
+              SET current_balance = ?
+              WHERE patient_id = ?
+            `);
+
+            updateBalanceStmt.run(newBalance, currentRecord.patient_id);
+          }
+        }
+      }
+
+      // Commit the transaction
+      db.prepare("COMMIT").run();
+
+      return { success: true };
+    } catch (error) {
+      // If any error occurs, roll back the transaction
+      db.prepare("ROLLBACK").run();
+      throw error;
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error updating orthodontic treatment record:", errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
 // Get monthly patient counts
 export function getMonthlyPatientCounts(): {
   success: boolean;

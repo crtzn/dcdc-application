@@ -39,26 +39,27 @@ import {
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const treatmentSchema = z.object({
   appt_no: z.string().min(1, "Appointment number is required"),
   date: z.string().min(1, "Date is required"),
-  arch_wire: z.string().min(1, "Arch wire is required").optional(),
+  arch_wire: z.string().min(1, "Arch wire is required"),
   procedure: z.string().optional(),
   appliances: z.string().optional(),
   contract_price: z
-    .number()
-    .min(0, "Contract price must be positive")
+    .union([z.number().min(0, "Contract price must be positive"), z.null()])
     .optional(),
   contract_months: z
-    .number()
-    .min(1, "Contract months must be at least 1")
+    .union([z.number().min(1, "Contract months must be at least 1"), z.null()])
     .optional(),
-  amount_paid: z.number().min(0, "Amount paid must be positive").optional(),
+  amount_paid: z
+    .union([z.number().min(0, "Amount paid must be positive"), z.null()])
+    .optional(),
   next_schedule: z.string().optional(),
   mode_of_payment: z.string().optional(),
-  treatment_cycle: z.number().optional(),
-  balance: z.number().optional(),
+  treatment_cycle: z.union([z.number(), z.null()]).optional(),
+  balance: z.union([z.number(), z.null()]).optional(),
 });
 
 // Define the form values type based on the Zod schema
@@ -69,6 +70,8 @@ interface OrthodonticTreatmentRecordFormProps {
   onBack: () => void;
   patientId?: number; // Optional patient ID for existing patients
   defaultAppointmentNumber?: string; // Optional default appointment number
+  initialData?: Partial<TreatmentFormValues>; // Initial data for editing
+  isEditing?: boolean; // Flag to indicate if form is in edit mode
 }
 
 // Helper function to normalize date to avoid timezone issues
@@ -88,17 +91,33 @@ const normalizeDate = (date: Date): Date => {
 
 const OrthodonticTreatmentRecordForm: React.FC<
   OrthodonticTreatmentRecordFormProps
-> = ({ onSubmit, onBack, patientId, defaultAppointmentNumber }) => {
+> = ({
+  onSubmit,
+  onBack,
+  patientId,
+  defaultAppointmentNumber,
+  initialData,
+  isEditing = false,
+}) => {
   const [loading, setLoading] = useState(false);
   const [treatmentDate, setTreatmentDate] = useState<Date | undefined>(() => {
-    // Initialize with normalized current date to avoid timezone issues
+    // Initialize with normalized date from initialData or current date
+    if (initialData?.date) {
+      return normalizeDate(new Date(initialData.date));
+    }
     return normalizeDate(new Date());
   });
   const [nextScheduleDate, setNextScheduleDate] = useState<Date | undefined>(
-    undefined
+    () => {
+      // Initialize with normalized date from initialData or undefined
+      if (initialData?.next_schedule) {
+        return normalizeDate(new Date(initialData.next_schedule));
+      }
+      return undefined;
+    }
   );
   const [showOtherInput, setShowOtherInput] = useState(false);
-  const [otherValue, setOtherValue] = useState("");
+  const [otherValue, setOtherValue] = useState(initialData?.appliances || "");
 
   // Popover states for calendar controls
   const treatmentDatePopover = usePopoverClose();
@@ -106,20 +125,35 @@ const OrthodonticTreatmentRecordForm: React.FC<
 
   const form = useForm<TreatmentFormValues>({
     resolver: zodResolver(treatmentSchema),
-    defaultValues: {
-      appt_no: defaultAppointmentNumber || "",
-      date: new Date().toISOString().split("T")[0],
-      arch_wire: "", // Required field but marked as optional in the type
-      procedure: "",
-      appliances: "",
-      contract_price: undefined,
-      contract_months: undefined,
-      amount_paid: undefined, // No default value
-      next_schedule: "",
-      mode_of_payment: "Cash", // Default to Cash as per user preference
-      treatment_cycle: 1,
-      balance: undefined,
-    },
+    defaultValues: initialData
+      ? {
+          appt_no: initialData.appt_no || defaultAppointmentNumber || "",
+          date: initialData.date || new Date().toISOString().split("T")[0],
+          arch_wire: initialData.arch_wire || "",
+          procedure: initialData.procedure || "",
+          appliances: initialData.appliances || "",
+          contract_price: initialData.contract_price,
+          contract_months: initialData.contract_months,
+          amount_paid: initialData.amount_paid,
+          next_schedule: initialData.next_schedule || "",
+          mode_of_payment: initialData.mode_of_payment || "Cash",
+          treatment_cycle: initialData.treatment_cycle || 1,
+          balance: initialData.balance,
+        }
+      : {
+          appt_no: defaultAppointmentNumber || "",
+          date: new Date().toISOString().split("T")[0],
+          arch_wire: "", // Required field but marked as optional in the type
+          procedure: "",
+          appliances: "",
+          contract_price: undefined,
+          contract_months: undefined,
+          amount_paid: undefined, // No default value
+          next_schedule: "",
+          mode_of_payment: "Cash", // Default to Cash as per user preference
+          treatment_cycle: 1,
+          balance: undefined,
+        },
   });
 
   // Initialize appliances field state when component mounts
@@ -139,6 +173,9 @@ const OrthodonticTreatmentRecordForm: React.FC<
 
   // Fetch the next appointment number and patient details when the component mounts
   useEffect(() => {
+    // Skip fetching data if we're in editing mode
+    if (isEditing) return;
+
     const fetchData = async () => {
       if (patientId) {
         setLoading(true);
@@ -196,7 +233,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
     };
 
     fetchData();
-  }, [patientId, defaultAppointmentNumber, form]);
+  }, [patientId, defaultAppointmentNumber, form, isEditing]);
 
   // Function to handle manual date input for treatment date
   const handleTreatmentDateInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,10 +265,53 @@ const OrthodonticTreatmentRecordForm: React.FC<
     }
   };
 
-  const handleSubmit = form.handleSubmit((data) => {
-    console.log("Form submitted with data:", data); // Add logging
-    onSubmit(data);
-  });
+  const handleSubmit = form.handleSubmit(
+    (data) => {
+      console.log("Form submitted with data:", data); // Add logging
+
+      // Make sure arch_wire is not empty
+      if (!data.arch_wire || data.arch_wire.trim() === "") {
+        toast.error("Arch wire is required");
+        return;
+      }
+
+      // For first appointment, make sure contract_price and contract_months are provided
+      if (data.appt_no === "1" && !isEditing) {
+        if (data.contract_price === undefined || data.contract_price === null) {
+          toast.error("Contract price is required for the first appointment");
+          return;
+        }
+        if (
+          data.contract_months === undefined ||
+          data.contract_months === null
+        ) {
+          toast.error(
+            "Contract duration is required for the first appointment"
+          );
+          return;
+        }
+      }
+
+      // Make sure amount_paid is provided
+      if (data.amount_paid === undefined || data.amount_paid === null) {
+        toast.error("Amount paid is required");
+        return;
+      }
+
+      onSubmit(data);
+    },
+    (errors) => {
+      console.error("Form validation errors:", errors);
+      // Show validation errors to the user
+      const errorFields = Object.keys(errors);
+      if (errorFields.length > 0) {
+        const firstErrorField = errorFields[0] as keyof typeof errors;
+        const errorMessage =
+          errors[firstErrorField]?.message || "Validation error";
+        toast.error(`Form validation error: ${errorMessage}`);
+      }
+    }
+  );
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg border border-gray-200 flex flex-col">
@@ -406,6 +486,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                           placeholder="Enter procedure"
                           className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                           {...field}
+                          value={field.value || ""}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 text-xs" />
@@ -441,7 +522,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                             field.onChange(value);
                           }
                         }}
-                        value={showOtherInput ? "Others" : field.value}
+                        value={showOtherInput ? "Others" : field.value || ""}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10">
@@ -503,7 +584,11 @@ const OrthodonticTreatmentRecordForm: React.FC<
                             placeholder="Enter contract price"
                             className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                             {...field}
-                            value={field.value === undefined ? "" : field.value}
+                            value={
+                              field.value === undefined || field.value === null
+                                ? ""
+                                : field.value.toString()
+                            }
                             onChange={(e) => {
                               const value = e.target.value;
                               field.onChange(
@@ -534,7 +619,11 @@ const OrthodonticTreatmentRecordForm: React.FC<
                             placeholder="Enter duration in months"
                             className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                             {...field}
-                            value={field.value === undefined ? "" : field.value}
+                            value={
+                              field.value === undefined || field.value === null
+                                ? ""
+                                : field.value.toString()
+                            }
                             onChange={(e) => {
                               const value = e.target.value;
                               field.onChange(
@@ -574,7 +663,11 @@ const OrthodonticTreatmentRecordForm: React.FC<
                           placeholder="Enter amount paid"
                           className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                           {...field}
-                          value={field.value === undefined ? "" : field.value}
+                          value={
+                            field.value === undefined || field.value === null
+                              ? ""
+                              : field.value.toString()
+                          }
                           onChange={(e) => {
                             const value = e.target.value;
                             field.onChange(
@@ -600,7 +693,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                           type="date"
                           placeholder="YYYY-MM-DD"
                           className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
-                          value={field.value}
+                          value={field.value || ""}
                           onChange={handleNextScheduleDateInput}
                         />
                         <Popover
@@ -693,7 +786,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        value={field.value}
+                        value={field.value || ""}
                         defaultValue="Cash"
                       >
                         <FormControl>
@@ -733,7 +826,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
               type="submit"
               className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white rounded-md px-6 h-10 shadow-sm transition-colors"
             >
-              Submit Record
+              {isEditing ? "Update Record" : "Submit Record"}
             </Button>
           </CardFooter>
         </form>

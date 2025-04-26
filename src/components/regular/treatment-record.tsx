@@ -32,26 +32,23 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const treatmentSchema = z.object({
   treatment_date: z.string().min(1, "Treatment date is required"),
   tooth_number: z.string().min(1, "Tooth number is required"),
-  procedure: z.string().optional(),
-  dentist_name: z.string().optional(),
+  procedure: z.string().min(1, "Procedure is required"),
+  dentist_name: z.string().min(1, "Dentist name is required"),
   amount_charged: z
-    .number()
-    .min(0, "Amount charged must be positive")
-    .min(1, "Amount charged is required")
-    .optional()
-    .nullable(),
+    .union([z.number().min(0, "Amount charged must be positive"), z.null()])
+    .optional(),
   amount_paid: z
-    .number()
-    .min(0, "Amount paid must be positive")
-    .min(1, "Amount paid is required")
-    .optional()
-    .nullable(),
-  balance: z.number().min(0, "Balance must be positive").optional().nullable(),
-  mode_of_payment: z.string().min(1, "mode of payment is required"),
+    .union([z.number().min(0, "Amount paid must be positive"), z.null()])
+    .optional(),
+  balance: z
+    .union([z.number().min(0, "Balance must be positive"), z.null()])
+    .optional(),
+  mode_of_payment: z.string().min(1, "Mode of payment is required"),
 });
 
 type TreatmentFormValues = z.infer<typeof treatmentSchema>;
@@ -60,27 +57,48 @@ interface TreatmentRecordFormProps {
   onSubmit: (data: TreatmentFormValues) => void;
   onBack: () => void;
   isModal?: boolean; // New prop to indicate if form is in modal
+  initialData?: Partial<TreatmentFormValues>; // Initial data for editing
+  isEditing?: boolean; // Flag to indicate if form is in edit mode
 }
 
 const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
   onSubmit,
   onBack,
   isModal = false,
+  initialData,
+  isEditing = false,
 }) => {
-  const [, setTreatmentDate] = useState<Date | undefined>(new Date());
+  const [, setTreatmentDate] = useState<Date | undefined>(
+    initialData?.treatment_date
+      ? new Date(initialData.treatment_date)
+      : new Date()
+  );
 
   const form = useForm<TreatmentFormValues>({
     resolver: zodResolver(treatmentSchema),
-    defaultValues: {
-      treatment_date: new Date().toLocaleDateString("en-CA"),
-      tooth_number: "",
-      procedure: "",
-      dentist_name: "",
-      amount_charged: undefined,
-      amount_paid: undefined,
-      balance: undefined,
-      mode_of_payment: "",
-    },
+    defaultValues: initialData
+      ? {
+          treatment_date:
+            initialData.treatment_date ||
+            new Date().toLocaleDateString("en-CA"),
+          tooth_number: initialData.tooth_number || "",
+          procedure: initialData.procedure || "",
+          dentist_name: initialData.dentist_name || "",
+          amount_charged: initialData.amount_charged,
+          amount_paid: initialData.amount_paid,
+          balance: initialData.balance,
+          mode_of_payment: initialData.mode_of_payment || "",
+        }
+      : {
+          treatment_date: new Date().toLocaleDateString("en-CA"),
+          tooth_number: "",
+          procedure: "",
+          dentist_name: "",
+          amount_charged: undefined,
+          amount_paid: undefined,
+          balance: undefined,
+          mode_of_payment: "",
+        },
   });
 
   // Watch amount_charged and amount_paid fields to calculate balance
@@ -373,7 +391,52 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
       }`}
     >
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form
+          onSubmit={form.handleSubmit(
+            (data) => {
+              console.log("Form submitted with data:", data);
+
+              // Make sure required fields are provided
+              if (!data.treatment_date || data.treatment_date.trim() === "") {
+                toast.error("Treatment date is required");
+                return;
+              }
+
+              if (!data.tooth_number || data.tooth_number.trim() === "") {
+                toast.error("Tooth number is required");
+                return;
+              }
+
+              if (!data.procedure || data.procedure.trim() === "") {
+                toast.error("Procedure is required");
+                return;
+              }
+
+              if (!data.dentist_name || data.dentist_name.trim() === "") {
+                toast.error("Dentist name is required");
+                return;
+              }
+
+              if (!data.mode_of_payment || data.mode_of_payment.trim() === "") {
+                toast.error("Mode of payment is required");
+                return;
+              }
+
+              onSubmit(data);
+            },
+            (errors) => {
+              console.error("Form validation errors:", errors);
+              // Show validation errors to the user
+              const errorFields = Object.keys(errors);
+              if (errorFields.length > 0) {
+                const firstErrorField = errorFields[0] as keyof typeof errors;
+                const errorMessage =
+                  errors[firstErrorField]?.message || "Validation error";
+                toast.error(`Form validation error: ${errorMessage}`);
+              }
+            }
+          )}
+        >
           {isModal ? (
             <ScrollArea className="h-[calc(100vh-200px)]">
               {formContent}
@@ -398,7 +461,7 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
               type="submit"
               className="bg-blue-600 hover:bg-blue-700 text-white px-6"
             >
-              Save Treatment
+              {isEditing ? "Update Treatment" : "Save Treatment"}
             </Button>
           </CardFooter>
         </form>

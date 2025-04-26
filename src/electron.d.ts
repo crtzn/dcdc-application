@@ -154,6 +154,16 @@ interface ElectronAPI {
     recordId: number,
     newBalance: number
   ) => Promise<{ success: boolean; error?: string }>;
+  updateRegularTreatmentRecord: (
+    recordId: number,
+    record: Partial<Omit<RegularTreatmentRecord, "record_id" | "patient_id">>
+  ) => Promise<{ success: boolean; error?: string }>;
+  updateOrthodonticTreatmentRecord: (
+    recordId: number,
+    record: Partial<
+      Omit<OrthodonticTreatmentRecord, "record_id" | "patient_id">
+    >
+  ) => Promise<{ success: boolean; error?: string }>;
   onPaymentAdded: (callback: () => void) => () => void;
   onTreatmentRecordUpdated: (callback: () => void) => () => void;
 

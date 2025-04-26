@@ -74,6 +74,9 @@ const PatientDetailsModal = ({
     useState<RegularMedicalHistory | null>(null);
   const [selectedTreatmentRecord, setSelectedTreatmentRecord] =
     useState<RegularTreatmentRecord | null>(null);
+  const [selectedOrthoTreatmentRecord, setSelectedOrthoTreatmentRecord] =
+    useState<OrthodonticTreatmentRecord | null>(null);
+  const [showEditTreatmentForm, setShowEditTreatmentForm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   if (!patient || !type) return null;
@@ -132,6 +135,70 @@ const PatientDetailsModal = ({
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       toast.error(`Error adding treatment record: ${errorMessage}`);
+    }
+  };
+
+  const handleEditTreatmentSubmit = async (data: any) => {
+    try {
+      console.log("Submitting edited treatment record:", data);
+
+      let result;
+      if (type === "Regular" && selectedTreatmentRecord) {
+        // Convert empty strings to null for numeric fields
+        const processedData = {
+          ...data,
+          amount_charged:
+            data.amount_charged === "" ? null : data.amount_charged,
+          amount_paid: data.amount_paid === "" ? null : data.amount_paid,
+          balance: data.balance === "" ? null : data.balance,
+        };
+
+        result = await window.api.updateRegularTreatmentRecord(
+          selectedTreatmentRecord.record_id!,
+          processedData as Partial<
+            Omit<RegularTreatmentRecord, "record_id" | "patient_id">
+          >
+        );
+      } else if (type === "Ortho" && selectedOrthoTreatmentRecord) {
+        // Convert empty strings to null for numeric fields
+        const processedData = {
+          ...data,
+          contract_price:
+            data.contract_price === "" ? null : data.contract_price,
+          contract_months:
+            data.contract_months === "" ? null : data.contract_months,
+          amount_paid: data.amount_paid === "" ? null : data.amount_paid,
+          balance: data.balance === "" ? null : data.balance,
+          treatment_cycle:
+            data.treatment_cycle === "" ? null : data.treatment_cycle,
+        };
+
+        result = await window.api.updateOrthodonticTreatmentRecord(
+          selectedOrthoTreatmentRecord.record_id!,
+          processedData as Partial<
+            Omit<OrthodonticTreatmentRecord, "record_id" | "patient_id">
+          >
+        );
+      } else {
+        throw new Error("No treatment record selected for editing");
+      }
+
+      if (result.success) {
+        toast.success("Treatment record updated successfully");
+        setShowEditTreatmentForm(false);
+        setSelectedTreatmentRecord(null);
+        setSelectedOrthoTreatmentRecord(null);
+        // Force a refresh to get the updated data
+        setTimeout(() => {
+          onRefresh();
+        }, 500);
+      } else {
+        throw new Error(result.error || "Failed to update treatment record");
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      toast.error(`Error updating treatment record: ${errorMessage}`);
     }
   };
 
@@ -1686,6 +1753,7 @@ const PatientDetailsModal = ({
                 <TableHead>Amount Paid</TableHead>
                 <TableHead>Balance</TableHead>
                 <TableHead>Mode of Payment</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1700,6 +1768,19 @@ const PatientDetailsModal = ({
                     <TableCell>{formatValue(record.amount_paid)}</TableCell>
                     <TableCell>{formatValue(record.balance)}</TableCell>
                     <TableCell>{formatValue(record.mode_of_payment)}</TableCell>
+                    <TableCell>
+                      <Button
+                        onClick={() => {
+                          setSelectedTreatmentRecord(record);
+                          setShowEditTreatmentForm(true);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 px-2 flex items-center gap-1"
+                        size="sm"
+                      >
+                        <Edit size={12} />
+                        Edit
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 )
               )}
@@ -1840,6 +1921,7 @@ const PatientDetailsModal = ({
                       <TableHead>Amount Paid</TableHead>
                       <TableHead>Mode of Payment</TableHead>
                       <TableHead>Next Schedule</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1872,6 +1954,23 @@ const PatientDetailsModal = ({
                         </TableCell>
                         <TableCell>
                           {formatValue(record.next_schedule)}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            onClick={() => {
+                              setSelectedOrthoTreatmentRecord(record);
+                              setShowEditTreatmentForm(true);
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 px-2 flex items-center gap-1"
+                            size="sm"
+                            disabled={
+                              parseInt(record.appt_no) === 1 &&
+                              cycle !== currentCycle
+                            }
+                          >
+                            <Edit size={12} />
+                            Edit
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1908,6 +2007,58 @@ const PatientDetailsModal = ({
               onBack={() => setShowTreatmentForm(false)}
               patientId={patient.info.patient_id}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const renderEditTreatmentForm = () => {
+    if (!showEditTreatmentForm) return null;
+
+    return (
+      <Dialog
+        open={showEditTreatmentForm}
+        onOpenChange={setShowEditTreatmentForm}
+      >
+        <DialogContent
+          className="max-w-3xl"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <Edit size={20} />
+              Edit Treatment Record
+            </DialogTitle>
+            <p className="text-gray-500 text-sm mt-1">
+              Update treatment record details below.
+            </p>
+          </DialogHeader>
+          {type === "Regular" && selectedTreatmentRecord ? (
+            <TreatmentRecordForm
+              onSubmit={handleEditTreatmentSubmit}
+              onBack={() => {
+                setShowEditTreatmentForm(false);
+                setSelectedTreatmentRecord(null);
+              }}
+              initialData={selectedTreatmentRecord}
+              isEditing={true}
+            />
+          ) : type === "Ortho" && selectedOrthoTreatmentRecord ? (
+            <OrthodonticTreatmentRecordForm
+              onSubmit={handleEditTreatmentSubmit}
+              onBack={() => {
+                setShowEditTreatmentForm(false);
+                setSelectedOrthoTreatmentRecord(null);
+              }}
+              patientId={patient.info.patient_id}
+              initialData={selectedOrthoTreatmentRecord}
+              isEditing={true}
+            />
+          ) : (
+            <div className="p-4 text-center text-red-500">
+              No treatment record selected for editing.
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -2255,6 +2406,7 @@ const PatientDetailsModal = ({
         </DialogFooter>
       </DialogContent>
       {renderTreatmentForm()}
+      {renderEditTreatmentForm()}
       {renderEditForm()}
       {renderMedicalHistoryEditForm()}
       {renderPaymentForm()}

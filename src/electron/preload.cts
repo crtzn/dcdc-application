@@ -127,6 +127,17 @@ electron.contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("get-payment-history", patientId),
   updateTreatmentRecordBalance: (recordId: number, newBalance: number) =>
     ipcRenderer.invoke("update-treatment-record-balance", recordId, newBalance),
+  updateRegularTreatmentRecord: (
+    recordId: number,
+    record: Partial<Omit<RegularTreatmentRecord, "record_id" | "patient_id">>
+  ) => ipcRenderer.invoke("update-regular-treatment-record", recordId, record),
+  updateOrthodonticTreatmentRecord: (
+    recordId: number,
+    record: Partial<
+      Omit<OrthodonticTreatmentRecord, "record_id" | "patient_id">
+    >
+  ) =>
+    ipcRenderer.invoke("update-orthodontic-treatment-record", recordId, record),
   onPaymentAdded: (callback: () => void) => {
     ipcRenderer.on("payment-added", callback);
     return () => ipcRenderer.removeListener("payment-added", callback);

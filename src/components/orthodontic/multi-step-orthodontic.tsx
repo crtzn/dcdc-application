@@ -46,14 +46,7 @@ const OrthodonticMultiStepForm: React.FC = () => {
     setStep((prev) => prev - 1);
   };
 
-  const handleSubmit = async (
-    treatmentData: Partial<
-      Omit<
-        OrthodonticTreatmentRecord,
-        "record_id" | "patient_id" | "created_at"
-      >
-    >
-  ) => {
+  const handleSubmit = async (treatmentData: any) => {
     try {
       console.log("Treatment data received:", treatmentData); // Add logging
       // Add orthodontic patient

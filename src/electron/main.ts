@@ -29,6 +29,8 @@ import {
   updateOrthodonticContractDetails,
   deleteRegularPatient,
   deleteOrthodonticPatient,
+  updateRegularTreatmentRecord,
+  updateOrthodonticTreatmentRecord,
 } from "./models/tstmgr.js";
 import {
   createBackup,
@@ -471,6 +473,54 @@ ipcMain.handle(
       return result;
     } catch (error) {
       console.error("IPC update-treatment-record-balance error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+// Update regular treatment record
+ipcMain.handle(
+  "update-regular-treatment-record",
+  async (
+    _event,
+    recordId: number,
+    record: Partial<Omit<RegularTreatmentRecord, "record_id" | "patient_id">>
+  ) => {
+    try {
+      const result = await updateRegularTreatmentRecord(recordId, record);
+      if (result.success) {
+        BrowserWindow.getAllWindows().forEach((win) => {
+          win.webContents.send("treatment-record-updated");
+        });
+      }
+      return result;
+    } catch (error) {
+      console.error("IPC update-regular-treatment-record error:", error);
+      return { success: false, error: String(error) };
+    }
+  }
+);
+
+// Update orthodontic treatment record
+ipcMain.handle(
+  "update-orthodontic-treatment-record",
+  async (
+    _event,
+    recordId: number,
+    record: Partial<
+      Omit<OrthodonticTreatmentRecord, "record_id" | "patient_id">
+    >
+  ) => {
+    try {
+      const result = await updateOrthodonticTreatmentRecord(recordId, record);
+      if (result.success) {
+        BrowserWindow.getAllWindows().forEach((win) => {
+          win.webContents.send("treatment-record-updated");
+        });
+      }
+      return result;
+    } catch (error) {
+      console.error("IPC update-orthodontic-treatment-record error:", error);
       return { success: false, error: String(error) };
     }
   }
