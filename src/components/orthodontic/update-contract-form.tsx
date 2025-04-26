@@ -14,6 +14,7 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import { toast } from "sonner";
 import { OrthodonticPatient } from "@/electron/types/OrthodonticPatient";
 
@@ -150,18 +151,11 @@ const UpdateContractForm: React.FC<UpdateContractFormProps> = ({
                     New Contract Price
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
+                    <FormattedNumberInput
                       placeholder="Enter new contract price"
                       className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      {...field}
-                      value={field.value === undefined ? "" : field.value}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(
-                          value === "" ? undefined : parseFloat(value)
-                        );
-                      }}
+                      value={field.value}
+                      onChange={field.onChange}
                     />
                   </FormControl>
                   <FormDescription className="text-xs text-gray-500">

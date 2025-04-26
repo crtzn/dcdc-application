@@ -11,6 +11,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -279,21 +280,11 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
                   Amount Charged (₱) <RequiredIndicator />
                 </FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
+                  <FormattedNumberInput
                     placeholder="Amount Charged"
                     className="border-gray-300 focus:ring-blue-500"
-                    {...field}
-                    value={
-                      field.value === undefined || field.value === null
-                        ? ""
-                        : field.value
-                    }
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value ? parseFloat(e.target.value) : undefined
-                      )
-                    }
+                    value={field.value}
+                    onChange={field.onChange}
                   />
                 </FormControl>
                 <FormMessage className="text-red-500 text-xs" />
@@ -309,21 +300,11 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
                   Amount Paid (₱) <RequiredIndicator />
                 </FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
+                  <FormattedNumberInput
                     placeholder="Amount Paid"
                     className="border-gray-300 focus:ring-blue-500"
-                    {...field}
-                    value={
-                      field.value === undefined || field.value === null
-                        ? ""
-                        : field.value
-                    }
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value ? parseFloat(e.target.value) : undefined
-                      )
-                    }
+                    value={field.value}
+                    onChange={field.onChange}
                   />
                 </FormControl>
                 <FormMessage className="text-red-500 text-xs" />
@@ -337,16 +318,11 @@ const TreatmentRecordForm: React.FC<TreatmentRecordFormProps> = ({
               <FormItem>
                 <FormLabel className="text-gray-700">Balance (₱)</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
+                  <FormattedNumberInput
                     placeholder="0.00"
                     className="border-gray-300 bg-gray-100 focus:ring-blue-500"
-                    {...field}
-                    value={
-                      field.value === undefined || field.value === null
-                        ? ""
-                        : field.value
-                    }
+                    value={field.value}
+                    onChange={field.onChange}
                     readOnly
                   />
                 </FormControl>

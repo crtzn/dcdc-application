@@ -19,6 +19,7 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import {
   Select,
   SelectContent,
@@ -579,22 +580,11 @@ const OrthodonticTreatmentRecordForm: React.FC<
                           Contract Price <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
+                          <FormattedNumberInput
                             placeholder="Enter contract price"
                             className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
-                            {...field}
-                            value={
-                              field.value === undefined || field.value === null
-                                ? ""
-                                : field.value.toString()
-                            }
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              field.onChange(
-                                value === "" ? undefined : parseFloat(value)
-                              );
-                            }}
+                            value={field.value}
+                            onChange={field.onChange}
                           />
                         </FormControl>
                         <FormDescription className="text-xs text-gray-500">
@@ -658,22 +648,11 @@ const OrthodonticTreatmentRecordForm: React.FC<
                         Amount Paid <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
+                        <FormattedNumberInput
                           placeholder="Enter amount paid"
                           className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
-                          {...field}
-                          value={
-                            field.value === undefined || field.value === null
-                              ? ""
-                              : field.value.toString()
-                          }
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(
-                              value === "" ? undefined : parseFloat(value)
-                            );
-                          }}
+                          value={field.value}
+                          onChange={field.onChange}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 text-xs" />

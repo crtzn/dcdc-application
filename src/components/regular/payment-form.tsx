@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -199,14 +200,11 @@ const PaymentForm = ({
                   Amount Paid *
                 </FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
+                  <FormattedNumberInput
+                    placeholder="Enter amount paid"
                     className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    {...field}
-                    onChange={(e) =>
-                      field.onChange(parseFloat(e.target.value) || 0)
-                    }
+                    value={field.value}
+                    onChange={field.onChange}
                   />
                 </FormControl>
                 <FormMessage className="text-red-500 text-xs" />

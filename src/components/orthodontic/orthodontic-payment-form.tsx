@@ -16,6 +16,7 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -199,18 +200,11 @@ const OrthodonticPaymentForm = ({
                     Amount Paid (₱) <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
+                    <FormattedNumberInput
                       placeholder="Amount Paid"
                       className="border-gray-300 focus:ring-blue-500"
-                      {...field}
-                      value={field.value === undefined ? "" : field.value}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(
-                          value === "" ? undefined : parseFloat(value)
-                        );
-                      }}
+                      value={field.value}
+                      onChange={field.onChange}
                     />
                   </FormControl>
                   <FormMessage className="text-red-500 text-xs" />

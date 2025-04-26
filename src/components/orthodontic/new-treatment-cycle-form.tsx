@@ -14,6 +14,7 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
@@ -237,18 +238,11 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
                       New Contract Price <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
+                      <FormattedNumberInput
                         placeholder="Enter contract price"
                         className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        {...field}
-                        value={field.value === undefined ? "" : field.value}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          field.onChange(
-                            value === "" ? undefined : parseFloat(value)
-                          );
-                        }}
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormDescription className="text-xs text-gray-500">
@@ -475,18 +469,11 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
                       Amount Paid
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
+                      <FormattedNumberInput
                         placeholder="Enter amount paid"
                         className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        {...field}
-                        value={field.value === undefined ? "" : field.value}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          field.onChange(
-                            value === "" ? undefined : parseFloat(value)
-                          );
-                        }}
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage className="text-red-500 text-xs" />
