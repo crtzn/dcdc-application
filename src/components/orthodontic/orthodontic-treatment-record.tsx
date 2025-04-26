@@ -722,7 +722,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
                               initialFocus
                               captionLayout="dropdown-buttons"
                               fromYear={1900}
-                              toYear={new Date().getFullYear() + 5}
+                              toYear={new Date().getFullYear() + 10}
                               className="p-3 rounded-md border border-gray-200"
                               classNames={{
                                 months:
