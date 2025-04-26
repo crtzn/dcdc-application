@@ -160,18 +160,25 @@ const PatientDetailsModal = ({
           >
         );
       } else if (type === "Ortho" && selectedOrthoTreatmentRecord) {
-        // Convert empty strings to null for numeric fields
+        // Convert empty strings to null and ensure proper number conversion for numeric fields
         const processedData = {
           ...data,
           contract_price:
-            data.contract_price === "" ? null : data.contract_price,
+            data.contract_price === "" ? null : Number(data.contract_price),
           contract_months:
-            data.contract_months === "" ? null : data.contract_months,
-          amount_paid: data.amount_paid === "" ? null : data.amount_paid,
-          balance: data.balance === "" ? null : data.balance,
+            data.contract_months === "" ? null : Number(data.contract_months),
+          amount_paid:
+            data.amount_paid === "" ? null : Number(data.amount_paid),
+          balance: data.balance === "" ? null : Number(data.balance),
           treatment_cycle:
-            data.treatment_cycle === "" ? null : data.treatment_cycle,
+            data.treatment_cycle === "" ? null : Number(data.treatment_cycle),
         };
+
+        console.log("Processing orthodontic treatment record update:", {
+          originalData: data,
+          processedData,
+          recordId: selectedOrthoTreatmentRecord.record_id,
+        });
 
         result = await window.api.updateOrthodonticTreatmentRecord(
           selectedOrthoTreatmentRecord.record_id!,
@@ -188,10 +195,14 @@ const PatientDetailsModal = ({
         setShowEditTreatmentForm(false);
         setSelectedTreatmentRecord(null);
         setSelectedOrthoTreatmentRecord(null);
-        // Force a refresh to get the updated data
+
+        // Force a refresh to get the updated data with a slightly longer delay
+        // to ensure database operations are complete
+        console.log("Treatment record updated, refreshing data...");
         setTimeout(() => {
           onRefresh();
-        }, 500);
+          console.log("Data refresh triggered");
+        }, 800);
       } else {
         throw new Error(result.error || "Failed to update treatment record");
       }
@@ -1963,10 +1974,7 @@ const PatientDetailsModal = ({
                             }}
                             className="bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 px-2 flex items-center gap-1"
                             size="sm"
-                            disabled={
-                              parseInt(record.appt_no) === 1 &&
-                              cycle !== currentCycle
-                            }
+                            disabled={false}
                           >
                             <Edit size={12} />
                             Edit

@@ -1765,9 +1765,9 @@ export function updateOrthodonticTreatmentRecord(
 
       // If we're updating the amount paid, update the patient's balance
       if (record.amount_paid !== undefined) {
-        // Get the patient data
+        // Get the patient data with more details for better calculation
         const getPatientStmt = db.prepare(`
-          SELECT current_balance
+          SELECT current_balance, current_contract_price
           FROM orthodontic_patients
           WHERE patient_id = ?
         `);
@@ -1775,21 +1775,38 @@ export function updateOrthodonticTreatmentRecord(
         const patientData = getPatientStmt.get(currentRecord.patient_id) as
           | {
               current_balance: number;
+              current_contract_price: number;
             }
           | undefined;
 
         if (patientData && patientData.current_balance !== null) {
+          // Ensure numeric types for calculation
+          const oldAmountPaid = Number(currentRecord.amount_paid || 0);
+          const newAmountPaid = Number(record.amount_paid || 0);
+          const currentBalance = Number(patientData.current_balance);
+
           // Calculate the payment difference
-          const paymentDifference =
-            (record.amount_paid || 0) - (currentRecord.amount_paid || 0);
+          const paymentDifference = newAmountPaid - oldAmountPaid;
+
+          console.log("Updating orthodontic treatment record payment:", {
+            recordId,
+            oldAmountPaid,
+            newAmountPaid,
+            paymentDifference,
+            currentBalance,
+            patientId: currentRecord.patient_id,
+          });
 
           // Only update if there's a difference in payment
           if (paymentDifference !== 0) {
             // Calculate new balance
-            const newBalance = Math.max(
-              0,
-              patientData.current_balance - paymentDifference
-            );
+            const newBalance = Math.max(0, currentBalance - paymentDifference);
+
+            console.log("New balance calculation:", {
+              currentBalance,
+              paymentDifference,
+              newBalance,
+            });
 
             // Update the patient's balance
             const updateBalanceStmt = db.prepare(`
@@ -1799,6 +1816,15 @@ export function updateOrthodonticTreatmentRecord(
             `);
 
             updateBalanceStmt.run(newBalance, currentRecord.patient_id);
+
+            // Also update the balance in the treatment record itself
+            const updateRecordBalanceStmt = db.prepare(`
+              UPDATE orthodontic_treatment_records
+              SET balance = ?
+              WHERE record_id = ?
+            `);
+
+            updateRecordBalanceStmt.run(newBalance, recordId);
           }
         }
       }
