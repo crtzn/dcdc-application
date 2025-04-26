@@ -71,13 +71,29 @@ interface OrthodonticTreatmentRecordFormProps {
   defaultAppointmentNumber?: string; // Optional default appointment number
 }
 
+// Helper function to normalize date to avoid timezone issues
+const normalizeDate = (date: Date): Date => {
+  return new Date(
+    Date.UTC(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      12, // Set to noon UTC to avoid timezone issues
+      0,
+      0,
+      0
+    )
+  );
+};
+
 const OrthodonticTreatmentRecordForm: React.FC<
   OrthodonticTreatmentRecordFormProps
 > = ({ onSubmit, onBack, patientId, defaultAppointmentNumber }) => {
   const [loading, setLoading] = useState(false);
-  const [treatmentDate, setTreatmentDate] = useState<Date | undefined>(
-    new Date()
-  );
+  const [treatmentDate, setTreatmentDate] = useState<Date | undefined>(() => {
+    // Initialize with normalized current date to avoid timezone issues
+    return normalizeDate(new Date());
+  });
   const [nextScheduleDate, setNextScheduleDate] = useState<Date | undefined>(
     undefined
   );
@@ -182,6 +198,36 @@ const OrthodonticTreatmentRecordForm: React.FC<
     fetchData();
   }, [patientId, defaultAppointmentNumber, form]);
 
+  // Function to handle manual date input for treatment date
+  const handleTreatmentDateInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    form.setValue("date", inputValue);
+
+    // Try to parse the input as a date
+    const parsedDate = new Date(inputValue);
+    if (!isNaN(parsedDate.getTime())) {
+      // Normalize the date to avoid timezone issues
+      const normalizedDate = normalizeDate(parsedDate);
+      setTreatmentDate(normalizedDate);
+    }
+  };
+
+  // Function to handle manual date input for next schedule
+  const handleNextScheduleDateInput = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const inputValue = e.target.value;
+    form.setValue("next_schedule", inputValue);
+
+    // Try to parse the input as a date
+    const parsedDate = new Date(inputValue);
+    if (!isNaN(parsedDate.getTime())) {
+      // Normalize the date to avoid timezone issues
+      const normalizedDate = normalizeDate(parsedDate);
+      setNextScheduleDate(normalizedDate);
+    }
+  };
+
   const handleSubmit = form.handleSubmit((data) => {
     console.log("Form submitted with data:", data); // Add logging
     onSubmit(data);
@@ -240,77 +286,90 @@ const OrthodonticTreatmentRecordForm: React.FC<
                       <FormLabel className="text-gray-700 font-medium">
                         Treatment Date <span className="text-red-500">*</span>
                       </FormLabel>
-                      <Popover
-                        open={treatmentDatePopover.open}
-                        onOpenChange={treatmentDatePopover.onOpenChange}
-                      >
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal h-10 border-gray-300 rounded-md",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(new Date(field.value), "MM/dd/yyyy")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarDays className="ml-auto h-4 w-4 text-black" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-auto p-0 bg-white shadow-lg rounded-md"
-                          align="start"
-                          side="bottom"
-                          avoidCollisions
+                      <div className="flex flex-col space-y-2">
+                        <Input
+                          type="date"
+                          placeholder="YYYY-MM-DD"
+                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
+                          value={field.value}
+                          onChange={handleTreatmentDateInput}
+                        />
+                        <Popover
+                          open={treatmentDatePopover.open}
+                          onOpenChange={treatmentDatePopover.onOpenChange}
                         >
-                          <Calendar
-                            mode="single"
-                            selected={treatmentDate}
-                            onSelect={(date) => {
-                              if (date) {
-                                setTreatmentDate(date);
-                                field.onChange(
-                                  date.toISOString().split("T")[0]
-                                );
-                                treatmentDatePopover.onSelect()(); // Close popover after selection
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                type="button"
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal h-10 border-gray-300 rounded-md",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(new Date(field.value), "MM/dd/yyyy")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarDays className="ml-auto h-4 w-4 text-black" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-auto p-0 bg-white shadow-lg rounded-md"
+                            align="start"
+                            side="bottom"
+                            avoidCollisions
+                          >
+                            <Calendar
+                              mode="single"
+                              selected={treatmentDate}
+                              onSelect={(date) => {
+                                if (date) {
+                                  // Normalize the date to avoid timezone issues
+                                  const normalizedDate = normalizeDate(date);
+                                  setTreatmentDate(normalizedDate);
+                                  field.onChange(
+                                    normalizedDate.toISOString().split("T")[0]
+                                  );
+                                  treatmentDatePopover.onSelect()(); // Close popover after selection
+                                }
+                              }}
+                              disabled={(date) =>
+                                date > new Date() ||
+                                date < new Date("1900-01-01")
                               }
-                            }}
-                            disabled={(date) =>
-                              date > new Date() || date < new Date("1900-01-01")
-                            }
-                            initialFocus
-                            captionLayout="dropdown-buttons"
-                            fromYear={1900}
-                            toYear={new Date().getFullYear()}
-                            className="p-3 rounded-md border border-gray-200"
-                            classNames={{
-                              months:
-                                "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                              month: "space-y-4",
-                              caption:
-                                "flex justify-center pt-1 relative items-center",
-                              caption_label: "text-sm font-medium hidden",
-                              caption_dropdowns:
-                                "flex justify-center space-x-2",
-                              dropdown_month: "relative",
-                              dropdown_year: "relative",
-                              dropdown:
-                                "border border-gray-300 rounded-md bg-white text-sm p-1 focus:ring-2 focus:ring-blue-500",
-                              nav: "flex items-center",
-                              nav_button: "hidden",
-                              nav_button_previous: "hidden",
-                              nav_button_next: "hidden",
-                              table: "w-full border-collapse space-y-1",
-                              head_row: "flex w-full mb-2",
-                            }}
-                          />
-                        </PopoverContent>
-                      </Popover>
+                              initialFocus
+                              captionLayout="dropdown-buttons"
+                              fromYear={1900}
+                              toYear={new Date().getFullYear()}
+                              className="p-3 rounded-md border border-gray-200"
+                              classNames={{
+                                months:
+                                  "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                                month: "space-y-4",
+                                caption:
+                                  "flex justify-center pt-1 relative items-center",
+                                caption_label: "text-sm font-medium hidden",
+                                caption_dropdowns:
+                                  "flex justify-center space-x-2",
+                                dropdown_month: "relative",
+                                dropdown_year: "relative",
+                                dropdown:
+                                  "border border-gray-300 rounded-md bg-white text-sm p-1 focus:ring-2 focus:ring-blue-500",
+                                nav: "flex items-center",
+                                nav_button: "hidden",
+                                nav_button_previous: "hidden",
+                                nav_button_next: "hidden",
+                                table: "w-full border-collapse space-y-1",
+                                head_row: "flex w-full mb-2",
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                       <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
                   )}
@@ -536,75 +595,87 @@ const OrthodonticTreatmentRecordForm: React.FC<
                       <FormLabel className="text-gray-700 font-medium">
                         Next Schedule
                       </FormLabel>
-                      <Popover
-                        open={nextSchedulePopover.open}
-                        onOpenChange={nextSchedulePopover.onOpenChange}
-                      >
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal h-10 border-gray-300 rounded-md",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(new Date(field.value), "MM/dd/yyyy")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarDays className="ml-auto h-4 w-4 text-black" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-auto p-0 bg-white shadow-lg rounded-md"
-                          align="start"
-                          side="bottom"
-                          avoidCollisions
+                      <div className="flex flex-col space-y-2">
+                        <Input
+                          type="date"
+                          placeholder="YYYY-MM-DD"
+                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
+                          value={field.value}
+                          onChange={handleNextScheduleDateInput}
+                        />
+                        <Popover
+                          open={nextSchedulePopover.open}
+                          onOpenChange={nextSchedulePopover.onOpenChange}
                         >
-                          <Calendar
-                            mode="single"
-                            selected={nextScheduleDate}
-                            onSelect={(date) => {
-                              if (date) {
-                                setNextScheduleDate(date);
-                                field.onChange(
-                                  date.toISOString().split("T")[0]
-                                );
-                                nextSchedulePopover.onSelect()(); // Close popover after selection
-                              }
-                            }}
-                            disabled={(date) => date < new Date("1900-01-01")}
-                            initialFocus
-                            captionLayout="dropdown-buttons"
-                            fromYear={1900}
-                            toYear={new Date().getFullYear() + 5}
-                            className="p-3 rounded-md border border-gray-200"
-                            classNames={{
-                              months:
-                                "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                              month: "space-y-4",
-                              caption:
-                                "flex justify-center pt-1 relative items-center",
-                              caption_label: "text-sm font-medium hidden",
-                              caption_dropdowns:
-                                "flex justify-center space-x-2",
-                              dropdown_month: "relative",
-                              dropdown_year: "relative",
-                              dropdown:
-                                "border border-gray-300 rounded-md bg-white text-sm p-1 focus:ring-2 focus:ring-blue-500",
-                              nav: "flex items-center",
-                              nav_button: "hidden",
-                              nav_button_previous: "hidden",
-                              nav_button_next: "hidden",
-                              table: "w-full border-collapse space-y-1",
-                              head_row: "flex w-full mb-2",
-                            }}
-                          />
-                        </PopoverContent>
-                      </Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                type="button"
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal h-10 border-gray-300 rounded-md",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(new Date(field.value), "MM/dd/yyyy")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarDays className="ml-auto h-4 w-4 text-black" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-auto p-0 bg-white shadow-lg rounded-md"
+                            align="start"
+                            side="bottom"
+                            avoidCollisions
+                          >
+                            <Calendar
+                              mode="single"
+                              selected={nextScheduleDate}
+                              onSelect={(date) => {
+                                if (date) {
+                                  // Normalize the date to avoid timezone issues
+                                  const normalizedDate = normalizeDate(date);
+                                  setNextScheduleDate(normalizedDate);
+                                  field.onChange(
+                                    normalizedDate.toISOString().split("T")[0]
+                                  );
+                                  nextSchedulePopover.onSelect()(); // Close popover after selection
+                                }
+                              }}
+                              disabled={(date) => date < new Date("1900-01-01")}
+                              initialFocus
+                              captionLayout="dropdown-buttons"
+                              fromYear={1900}
+                              toYear={new Date().getFullYear() + 5}
+                              className="p-3 rounded-md border border-gray-200"
+                              classNames={{
+                                months:
+                                  "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                                month: "space-y-4",
+                                caption:
+                                  "flex justify-center pt-1 relative items-center",
+                                caption_label: "text-sm font-medium hidden",
+                                caption_dropdowns:
+                                  "flex justify-center space-x-2",
+                                dropdown_month: "relative",
+                                dropdown_year: "relative",
+                                dropdown:
+                                  "border border-gray-300 rounded-md bg-white text-sm p-1 focus:ring-2 focus:ring-blue-500",
+                                nav: "flex items-center",
+                                nav_button: "hidden",
+                                nav_button_previous: "hidden",
+                                nav_button_next: "hidden",
+                                table: "w-full border-collapse space-y-1",
+                                head_row: "flex w-full mb-2",
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                       <FormMessage className="text-red-500 text-xs" />
                       <FormDescription className="text-xs text-gray-500">
                         Select the date for the next appointment

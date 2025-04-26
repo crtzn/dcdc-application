@@ -59,15 +59,31 @@ interface NewTreatmentCycleFormProps {
   onCancel: () => void;
 }
 
+// Helper function to normalize date to avoid timezone issues
+const normalizeDate = (date: Date): Date => {
+  return new Date(
+    Date.UTC(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      12, // Set to noon UTC to avoid timezone issues
+      0,
+      0,
+      0
+    )
+  );
+};
+
 const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
   patientId,
   onSuccess,
   onCancel,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [treatmentDate, setTreatmentDate] = useState<Date | undefined>(
-    new Date()
-  );
+  const [treatmentDate, setTreatmentDate] = useState<Date | undefined>(() => {
+    // Initialize with normalized current date to avoid timezone issues
+    return normalizeDate(new Date());
+  });
   const [nextScheduleDate, setNextScheduleDate] = useState<Date | undefined>(
     undefined
   );
@@ -93,9 +109,40 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
     },
   });
 
+  // Function to handle manual date input for treatment date
+  const handleTreatmentDateInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    form.setValue("treatment_date", inputValue);
+
+    // Try to parse the input as a date
+    const parsedDate = new Date(inputValue);
+    if (!isNaN(parsedDate.getTime())) {
+      // Normalize the date to avoid timezone issues
+      const normalizedDate = normalizeDate(parsedDate);
+      setTreatmentDate(normalizedDate);
+    }
+  };
+
+  // Function to handle manual date input for next schedule
+  const handleNextScheduleDateInput = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const inputValue = e.target.value;
+    form.setValue("next_schedule", inputValue);
+
+    // Try to parse the input as a date
+    const parsedDate = new Date(inputValue);
+    if (!isNaN(parsedDate.getTime())) {
+      // Normalize the date to avoid timezone issues
+      const normalizedDate = normalizeDate(parsedDate);
+      setNextScheduleDate(normalizedDate);
+    }
+  };
+
   // Update form when treatment date changes
   React.useEffect(() => {
     if (treatmentDate) {
+      // Use the normalized date to set the form value
       form.setValue(
         "treatment_date",
         treatmentDate.toISOString().split("T")[0]
@@ -106,6 +153,7 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
   // Update form when next schedule date changes
   React.useEffect(() => {
     if (nextScheduleDate) {
+      // Use the normalized date to set the form value
       form.setValue(
         "next_schedule",
         nextScheduleDate.toISOString().split("T")[0]
@@ -244,54 +292,92 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
               />
             </div>
 
-            <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mt-6">
-              First Treatment Record
-            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Treatment Date */}
               <FormField
                 control={form.control}
                 name="treatment_date"
-                render={() => (
+                render={({ field }) => (
                   <FormItem className="flex flex-col space-y-1.5">
                     <FormLabel className="text-gray-700 font-medium">
                       Treatment Date <span className="text-red-500">*</span>
                     </FormLabel>
-                    <Popover
-                      open={treatmentDatePopover.open}
-                      onOpenChange={treatmentDatePopover.onOpenChange}
-                    >
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className="w-full pl-3 text-left font-normal flex justify-between items-center border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          >
-                            {treatmentDate ? (
-                              format(treatmentDate, "PPP")
-                            ) : (
-                              <span className="text-gray-400">Pick a date</span>
-                            )}
-                            <CalendarIcon className="h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-auto p-0"
-                        align="start"
-                        side="bottom"
+                    <div className="flex flex-col space-y-2">
+                      <Input
+                        type="date"
+                        placeholder="YYYY-MM-DD"
+                        className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        value={field.value}
+                        onChange={handleTreatmentDateInput}
+                      />
+                      <Popover
+                        open={treatmentDatePopover.open}
+                        onOpenChange={treatmentDatePopover.onOpenChange}
                       >
-                        <Calendar
-                          mode="single"
-                          selected={treatmentDate}
-                          onSelect={(date) => {
-                            setTreatmentDate(date);
-                            treatmentDatePopover.onSelect()();
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full pl-3 text-left font-normal flex justify-between items-center border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                            >
+                              {treatmentDate ? (
+                                format(treatmentDate, "PPP")
+                              ) : (
+                                <span className="text-gray-400">
+                                  Pick a date
+                                </span>
+                              )}
+                              <CalendarIcon className="h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-auto p-0 bg-white shadow-lg rounded-md"
+                          align="start"
+                          side="bottom"
+                          avoidCollisions
+                        >
+                          <Calendar
+                            mode="single"
+                            selected={treatmentDate}
+                            onSelect={(date) => {
+                              if (date) {
+                                // Normalize the date to avoid timezone issues
+                                const normalizedDate = normalizeDate(date);
+                                setTreatmentDate(normalizedDate);
+                                treatmentDatePopover.onSelect()();
+                              }
+                            }}
+                            initialFocus
+                            captionLayout="dropdown-buttons"
+                            fromYear={1900}
+                            toYear={new Date().getFullYear() + 5}
+                            className="p-3 rounded-md border border-gray-200"
+                            classNames={{
+                              months:
+                                "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                              month: "space-y-4",
+                              caption:
+                                "flex justify-center pt-1 relative items-center",
+                              caption_label: "text-sm font-medium hidden",
+                              caption_dropdowns:
+                                "flex justify-center space-x-2",
+                              dropdown_month: "relative",
+                              dropdown_year: "relative",
+                              dropdown:
+                                "border border-gray-300 rounded-md bg-white text-sm p-1 focus:ring-2 focus:ring-blue-500",
+                              nav: "flex items-center",
+                              nav_button: "hidden",
+                              nav_button_previous: "hidden",
+                              nav_button_next: "hidden",
+                              table: "w-full border-collapse space-y-1",
+                              head_row: "flex w-full mb-2",
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     <FormMessage className="text-red-500 text-xs" />
                   </FormItem>
                 )}
@@ -446,46 +532,87 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
               <FormField
                 control={form.control}
                 name="next_schedule"
-                render={() => (
+                render={({ field }) => (
                   <FormItem className="flex flex-col space-y-1.5">
                     <FormLabel className="text-gray-700 font-medium">
                       Next Schedule
                     </FormLabel>
-                    <Popover
-                      open={nextSchedulePopover.open}
-                      onOpenChange={nextSchedulePopover.onOpenChange}
-                    >
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className="w-full pl-3 text-left font-normal flex justify-between items-center border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          >
-                            {nextScheduleDate ? (
-                              format(nextScheduleDate, "PPP")
-                            ) : (
-                              <span className="text-gray-400">Pick a date</span>
-                            )}
-                            <CalendarIcon className="h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-auto p-0"
-                        align="start"
-                        side="bottom"
+                    <div className="flex flex-col space-y-2">
+                      <Input
+                        type="date"
+                        placeholder="YYYY-MM-DD"
+                        className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        value={field.value}
+                        onChange={handleNextScheduleDateInput}
+                      />
+                      <Popover
+                        open={nextSchedulePopover.open}
+                        onOpenChange={nextSchedulePopover.onOpenChange}
                       >
-                        <Calendar
-                          mode="single"
-                          selected={nextScheduleDate}
-                          onSelect={(date) => {
-                            setNextScheduleDate(date);
-                            nextSchedulePopover.onSelect()();
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full pl-3 text-left font-normal flex justify-between items-center border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                            >
+                              {nextScheduleDate ? (
+                                format(nextScheduleDate, "PPP")
+                              ) : (
+                                <span className="text-gray-400">
+                                  Pick a date
+                                </span>
+                              )}
+                              <CalendarIcon className="h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-auto p-0 bg-white shadow-lg rounded-md"
+                          align="start"
+                          side="bottom"
+                          avoidCollisions
+                        >
+                          <Calendar
+                            mode="single"
+                            selected={nextScheduleDate}
+                            onSelect={(date) => {
+                              if (date) {
+                                // Normalize the date to avoid timezone issues
+                                const normalizedDate = normalizeDate(date);
+                                setNextScheduleDate(normalizedDate);
+                                nextSchedulePopover.onSelect()();
+                              }
+                            }}
+                            initialFocus
+                            captionLayout="dropdown-buttons"
+                            fromYear={1900}
+                            toYear={new Date().getFullYear() + 5}
+                            className="p-3 rounded-md border border-gray-200"
+                            classNames={{
+                              months:
+                                "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                              month: "space-y-4",
+                              caption:
+                                "flex justify-center pt-1 relative items-center",
+                              caption_label: "text-sm font-medium hidden",
+                              caption_dropdowns:
+                                "flex justify-center space-x-2",
+                              dropdown_month: "relative",
+                              dropdown_year: "relative",
+                              dropdown:
+                                "border border-gray-300 rounded-md bg-white text-sm p-1 focus:ring-2 focus:ring-blue-500",
+                              nav: "flex items-center",
+                              nav_button: "hidden",
+                              nav_button_previous: "hidden",
+                              nav_button_next: "hidden",
+                              table: "w-full border-collapse space-y-1",
+                              head_row: "flex w-full mb-2",
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     <FormMessage className="text-red-500 text-xs" />
                   </FormItem>
                 )}
