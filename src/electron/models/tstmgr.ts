@@ -1160,18 +1160,43 @@ export function updateMedicalHistory(
   error?: string;
 } {
   try {
-    const fields = Object.keys(history)
+    // Create a copy of the history object to avoid modifying the original
+    const historyData: Record<string, any> = { ...history };
+
+    // Convert boolean values to 0/1 for SQLite
+    const booleanFields = [
+      "under_medical_treatment",
+      "serious_illness_or_surgery",
+      "hospitalized",
+      "taking_medications",
+      "uses_tobacco",
+      "is_pregnant",
+      "is_nursing",
+      "taking_birth_control",
+    ];
+
+    // Process each boolean field
+    for (const field of booleanFields) {
+      if (field in historyData && typeof historyData[field] === "boolean") {
+        historyData[field] = historyData[field] ? 1 : 0;
+      }
+    }
+
+    const fields = Object.keys(historyData)
       .map((key) => `${key} = ?`)
       .join(", ");
-    const values = Object.values(history);
+    const values = Object.values(historyData);
+
     if (!fields) {
       return { success: false, error: "No fields to update" };
     }
+
     const stmt = db.prepare(`
       UPDATE regular_medical_history
       SET ${fields}
       WHERE history_id = ?
     `);
+
     stmt.run(...values, history_id);
     return { success: true };
   } catch (error) {
