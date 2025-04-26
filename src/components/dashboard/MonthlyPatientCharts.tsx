@@ -108,8 +108,10 @@ const MonthlyPatientsChart: React.FC = () => {
     };
   }, []);
 
-  // Filter data by selected year
-  const filteredData = data.filter((d) => d.year.toString() === selectedYear);
+  // Filter data by selected year and sort by month chronologically
+  const filteredData = data
+    .filter((d) => d.year.toString() === selectedYear)
+    .sort((a, b) => a.month - b.month); // Sort by month in ascending order
 
   // Format data for Chart.js
   const chartData = {

@@ -1607,8 +1607,8 @@ export function getMonthlyPatientCounts(): {
         SELECT registration_date FROM orthodontic_patients
       )
       GROUP BY year, month
-      ORDER BY year DESC, month DESC
-      LIMIT 12
+      ORDER BY year DESC, month ASC
+      LIMIT 24
     `;
     const stmt = db.prepare(query);
     const results = stmt.all() as Array<{
