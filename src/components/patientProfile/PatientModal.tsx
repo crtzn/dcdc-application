@@ -40,7 +40,109 @@ import OrthodonticPaymentForm from "@/components/orthodontic/orthodontic-payment
 import NewTreatmentCycleForm from "@/components/orthodontic/new-treatment-cycle-form";
 import UpdateContractForm from "@/components/orthodontic/update-contract-form";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
-import { Trash2, RefreshCw, Edit } from "lucide-react";
+import { Trash2, RefreshCw, Edit, ChevronUp } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+// Component to display multiple values in a compact way
+const MultiValueDisplay = ({
+  value,
+  fieldName = "items",
+}: {
+  value: string | null | undefined;
+  fieldName?: string;
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!value) return <span>N/A</span>;
+
+  const items = value.split(", ");
+
+  if (items.length <= 1) {
+    return <span>{value}</span>;
+  }
+
+  return (
+    <div className="relative">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="cursor-pointer">
+              {isExpanded ? (
+                <div className="flex flex-col space-y-1 max-w-[150px]">
+                  {items.map((item, index) => (
+                    <div
+                      key={index}
+                      className="text-xs bg-blue-50 px-2 py-1 rounded border border-blue-100"
+                    >
+                      {item}
+                    </div>
+                  ))}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsExpanded(false);
+                    }}
+                    className="text-blue-600 hover:text-blue-800 text-xs flex items-center justify-center mt-1 bg-blue-50 px-2 py-1 rounded border border-blue-100"
+                  >
+                    Show Less <ChevronUp size={12} className="ml-1" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => setIsExpanded(true)}
+                  className="flex items-center"
+                >
+                  <div className="text-xs bg-blue-50 px-2 py-1 rounded border border-blue-100 truncate max-w-[100px]">
+                    {items[0]}
+                  </div>
+                  <span className="text-blue-600 text-xs ml-1 whitespace-nowrap">
+                    +{items.length - 1} more
+                  </span>
+                </div>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent
+            side="right"
+            className="bg-white p-2 shadow-lg border rounded-md"
+          >
+            <div className="max-w-[200px] max-h-[200px] overflow-y-auto">
+              <p className="font-medium text-sm mb-2 text-blue-800">
+                All {fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}:
+              </p>
+              {items.map((item, index) => (
+                <div
+                  key={index}
+                  className="text-sm py-1 border-b border-gray-100 last:border-0"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
+};
+
+// Alias components for specific fields
+const ArchWireDisplay = (props: { value: string | null | undefined }) => (
+  <MultiValueDisplay {...props} fieldName="arch wires" />
+);
+
+const ProcedureDisplay = (props: { value: string | null | undefined }) => (
+  <MultiValueDisplay {...props} fieldName="procedures" />
+);
+
+const AppliancesDisplay = (props: { value: string | null | undefined }) => (
+  <MultiValueDisplay {...props} fieldName="appliances" />
+);
 
 interface PatientDetailsModalProps {
   patient: {
@@ -160,19 +262,80 @@ const PatientDetailsModal = ({
           >
         );
       } else if (type === "Ortho" && selectedOrthoTreatmentRecord) {
-        // Convert empty strings to null and ensure proper number conversion for numeric fields
-        const processedData = {
-          ...data,
-          contract_price:
-            data.contract_price === "" ? null : Number(data.contract_price),
-          contract_months:
-            data.contract_months === "" ? null : Number(data.contract_months),
-          amount_paid:
-            data.amount_paid === "" ? null : Number(data.amount_paid),
-          balance: data.balance === "" ? null : Number(data.balance),
-          treatment_cycle:
-            data.treatment_cycle === "" ? null : Number(data.treatment_cycle),
-        };
+        // For orthodontic treatment records, we need to be extra careful with the data processing
+        console.log("Original data for update:", data);
+
+        // Start with a clean object containing only the fields we want to update
+        const processedData: Record<string, string | number | null> = {};
+
+        // Copy all string fields directly
+        if (data.appt_no !== undefined) processedData.appt_no = data.appt_no;
+        if (data.date !== undefined) processedData.date = data.date;
+        if (data.arch_wire !== undefined)
+          processedData.arch_wire = data.arch_wire;
+        if (data.procedure !== undefined)
+          processedData.procedure = data.procedure;
+        if (data.appliances !== undefined)
+          processedData.appliances = data.appliances;
+        if (data.next_schedule !== undefined)
+          processedData.next_schedule = data.next_schedule;
+        if (data.mode_of_payment !== undefined)
+          processedData.mode_of_payment = data.mode_of_payment;
+
+        // Process numeric fields carefully - only include them if they're actually present
+        // and convert them to numbers or null as appropriate
+
+        // Contract price
+        if (data.contract_price !== undefined) {
+          if (data.contract_price === "") {
+            processedData.contract_price = null;
+          } else {
+            const numValue = Number(data.contract_price);
+            processedData.contract_price = isNaN(numValue) ? null : numValue;
+          }
+        }
+
+        // Contract months
+        if (data.contract_months !== undefined) {
+          if (data.contract_months === "") {
+            processedData.contract_months = null;
+          } else {
+            const numValue = Number(data.contract_months);
+            processedData.contract_months = isNaN(numValue) ? null : numValue;
+          }
+        }
+
+        // Amount paid
+        if (data.amount_paid !== undefined) {
+          if (data.amount_paid === "") {
+            processedData.amount_paid = null;
+          } else {
+            const numValue = Number(data.amount_paid);
+            processedData.amount_paid = isNaN(numValue) ? null : numValue;
+          }
+        }
+
+        // Balance
+        if (data.balance !== undefined) {
+          if (data.balance === "") {
+            processedData.balance = null;
+          } else {
+            const numValue = Number(data.balance);
+            processedData.balance = isNaN(numValue) ? null : numValue;
+          }
+        }
+
+        // Treatment cycle
+        if (data.treatment_cycle !== undefined) {
+          if (data.treatment_cycle === "") {
+            processedData.treatment_cycle = null;
+          } else {
+            const numValue = Number(data.treatment_cycle);
+            processedData.treatment_cycle = isNaN(numValue) ? null : numValue;
+          }
+        }
+
+        console.log("Processed data for update:", processedData);
 
         console.log("Processing orthodontic treatment record update:", {
           originalData: data,
@@ -192,6 +355,8 @@ const PatientDetailsModal = ({
 
       if (result.success) {
         toast.success("Treatment record updated successfully");
+
+        // Clear form state and close the form
         setShowEditTreatmentForm(false);
         setSelectedTreatmentRecord(null);
         setSelectedOrthoTreatmentRecord(null);
@@ -202,7 +367,7 @@ const PatientDetailsModal = ({
         setTimeout(() => {
           onRefresh();
           console.log("Data refresh triggered");
-        }, 800);
+        }, 1000);
       } else {
         throw new Error(result.error || "Failed to update treatment record");
       }
@@ -1560,7 +1725,9 @@ const PatientDetailsModal = ({
                         <TableCell>
                           {formatValue(record.treatment_date)}
                         </TableCell>
-                        <TableCell>{formatValue(record.procedure)}</TableCell>
+                        <TableCell>
+                          <ProcedureDisplay value={record.procedure} />
+                        </TableCell>
                         <TableCell className="font-medium text-red-600">
                           ₱
                           {record.balance?.toLocaleString(undefined, {
@@ -1782,7 +1949,9 @@ const PatientDetailsModal = ({
                   <TableRow key={record.record_id}>
                     <TableCell>{formatValue(record.treatment_date)}</TableCell>
                     <TableCell>{formatValue(record.tooth_number)}</TableCell>
-                    <TableCell>{formatValue(record.procedure)}</TableCell>
+                    <TableCell>
+                      <ProcedureDisplay value={record.procedure} />
+                    </TableCell>
                     <TableCell>{formatValue(record.dentist_name)}</TableCell>
                     <TableCell>{formatValue(record.amount_charged)}</TableCell>
                     <TableCell>{formatValue(record.amount_paid)}</TableCell>
@@ -1966,9 +2135,15 @@ const PatientDetailsModal = ({
                           )}
                         </TableCell>
                         <TableCell>{formatValue(record.date)}</TableCell>
-                        <TableCell>{formatValue(record.arch_wire)}</TableCell>
-                        <TableCell>{formatValue(record.procedure)}</TableCell>
-                        <TableCell>{formatValue(record.appliances)}</TableCell>
+                        <TableCell>
+                          <ArchWireDisplay value={record.arch_wire} />
+                        </TableCell>
+                        <TableCell>
+                          <ProcedureDisplay value={record.procedure} />
+                        </TableCell>
+                        <TableCell>
+                          <AppliancesDisplay value={record.appliances} />
+                        </TableCell>
                         {/* New column */}
                         <TableCell>
                           {record.amount_paid

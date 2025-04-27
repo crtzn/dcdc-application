@@ -15,10 +15,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
-import { Textarea } from "@/components/ui/textarea";
+
 import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import {
   Popover,
@@ -33,6 +33,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const newCycleSchema = z.object({
   contract_price: z
@@ -88,8 +94,6 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
   const [nextScheduleDate, setNextScheduleDate] = useState<Date | undefined>(
     undefined
   );
-  const [showOtherInput, setShowOtherInput] = useState(false);
-  const [otherValue, setOtherValue] = useState("");
 
   // Popover states for calendar controls
   const treatmentDatePopover = usePopoverClose();
@@ -162,29 +166,18 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
     }
   }, [nextScheduleDate, form]);
 
-  // Handle appliance selection
-  const handleApplianceChange = (value: string) => {
-    if (value === "Other") {
-      setShowOtherInput(true);
-      form.setValue("appliances", otherValue);
-    } else {
-      setShowOtherInput(false);
-      form.setValue("appliances", value);
-    }
-  };
-
-  // Handle other appliance input
-  const handleOtherApplianceChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = e.target.value;
-    setOtherValue(value);
-    form.setValue("appliances", value);
-  };
+  // No longer needed with the new multi-select appliances implementation
 
   const handleSubmit = async (data: NewCycleFormValues) => {
     try {
       setIsSubmitting(true);
+
+      // Validate that at least one arch wire is selected
+      if (!data.arch_wire || data.arch_wire.trim() === "") {
+        toast.error("At least one arch wire must be selected");
+        setIsSubmitting(false);
+        return;
+      }
 
       const result = await window.api.startNewOrthodonticTreatmentCycle(
         patientId,
@@ -381,82 +374,224 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
               <FormField
                 control={form.control}
                 name="arch_wire"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col space-y-1.5">
-                    <FormLabel className="text-gray-700 font-medium">
-                      Arch Wire <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter arch wire"
-                        className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-500 text-xs" />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  // Parse the comma-separated string into an array
+                  const selectedWires = field.value
+                    ? field.value.split(", ")
+                    : [];
+
+                  // List of all available arch wires
+                  const archWireOptions = [
+                    "Upper 012 niti",
+                    "Upper 014 niti",
+                    "Upper 016 niti",
+                    "Upper 016 x.22 niti",
+                    "Upper 016 SS",
+                    "Upper 016 x.22 SS",
+                    "Lower 012 niti",
+                    "Lower 014 niti",
+                    "Lower 016 niti",
+                    "Lower 016 x.22 niti",
+                    "Lower 016 SS",
+                    "Lower 016 x.22 SS",
+                  ];
+
+                  return (
+                    <FormItem className="flex flex-col space-y-1.5">
+                      <FormLabel className="text-gray-700 font-medium">
+                        Arch Wire <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10 font-normal"
+                            >
+                              {selectedWires.length > 0
+                                ? selectedWires.length === 1
+                                  ? selectedWires[0]
+                                  : `${selectedWires.length} arch wires selected`
+                                : "Select arch wires"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-full min-w-[200px] max-h-[300px] overflow-auto">
+                            {archWireOptions.map((wire) => (
+                              <DropdownMenuCheckboxItem
+                                key={wire}
+                                checked={selectedWires.includes(wire)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    // Add the wire to the selection
+                                    const newSelection = [
+                                      ...selectedWires,
+                                      wire,
+                                    ];
+                                    field.onChange(newSelection.join(", "));
+                                  } else {
+                                    // Remove the wire from the selection
+                                    const newSelection = selectedWires.filter(
+                                      (w) => w !== wire
+                                    );
+                                    field.onChange(newSelection.join(", "));
+                                  }
+                                }}
+                              >
+                                {wire}
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </FormControl>
+                      <FormMessage className="text-red-500 text-xs" />
+                    </FormItem>
+                  );
+                }}
               />
 
               {/* Procedure */}
               <FormField
                 control={form.control}
                 name="procedure"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col space-y-1.5">
-                    <FormLabel className="text-gray-700 font-medium">
-                      Procedure
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Enter procedure details"
-                        className="resize-none border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-500 text-xs" />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  // Parse the comma-separated string into an array
+                  const selectedProcedures = field.value
+                    ? field.value.split(", ")
+                    : [];
+
+                  // List of all available procedures
+                  const procedureOptions = [
+                    "Upper Adjustment",
+                    "Lower Adjustment",
+                    "Upper/Lower Adjustment",
+                  ];
+
+                  return (
+                    <FormItem className="flex flex-col space-y-1.5">
+                      <FormLabel className="text-gray-700 font-medium">
+                        Procedure
+                      </FormLabel>
+                      <FormControl>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10 font-normal"
+                            >
+                              {selectedProcedures.length > 0
+                                ? selectedProcedures.length === 1
+                                  ? selectedProcedures[0]
+                                  : `${selectedProcedures.length} procedures selected`
+                                : "Select procedures"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-full min-w-[200px] max-h-[300px] overflow-auto">
+                            {procedureOptions.map((procedure) => (
+                              <DropdownMenuCheckboxItem
+                                key={procedure}
+                                checked={selectedProcedures.includes(procedure)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    // Add the procedure to the selection
+                                    const newSelection = [
+                                      ...selectedProcedures,
+                                      procedure,
+                                    ];
+                                    field.onChange(newSelection.join(", "));
+                                  } else {
+                                    // Remove the procedure from the selection
+                                    const newSelection =
+                                      selectedProcedures.filter(
+                                        (p) => p !== procedure
+                                      );
+                                    field.onChange(newSelection.join(", "));
+                                  }
+                                }}
+                              >
+                                {procedure}
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </FormControl>
+                      <FormMessage className="text-red-500 text-xs" />
+                    </FormItem>
+                  );
+                }}
               />
 
               {/* Appliances */}
               <FormField
                 control={form.control}
                 name="appliances"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col space-y-1.5">
-                    <FormLabel className="text-gray-700 font-medium">
-                      Appliances
-                    </FormLabel>
-                    <Select
-                      onValueChange={handleApplianceChange}
-                      defaultValue={field.value}
-                    >
+                render={({ field }) => {
+                  // Parse the comma-separated appliances into an array
+                  const selectedAppliances = field.value
+                    ? field.value.split(", ")
+                    : [];
+
+                  // Define the appliance options - only the three specified options
+                  const applianceOptions = [
+                    "Pads",
+                    "Anterior Bite Plate",
+                    "Retainers",
+                  ];
+
+                  return (
+                    <FormItem className="flex flex-col space-y-1.5">
+                      <FormLabel className="text-gray-700 font-medium">
+                        Appliances
+                      </FormLabel>
                       <FormControl>
-                        <SelectTrigger className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                          <SelectValue placeholder="Select appliance" />
-                        </SelectTrigger>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10 font-normal"
+                            >
+                              {selectedAppliances.length > 0
+                                ? selectedAppliances.length === 1
+                                  ? selectedAppliances[0]
+                                  : `${selectedAppliances.length} appliances selected`
+                                : "Select appliances"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-full min-w-[200px] max-h-[300px] overflow-auto">
+                            {applianceOptions.map((appliance) => (
+                              <DropdownMenuCheckboxItem
+                                key={appliance}
+                                checked={selectedAppliances.includes(appliance)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    // Add the appliance to the selection
+                                    const newSelection = [
+                                      ...selectedAppliances,
+                                      appliance,
+                                    ];
+                                    field.onChange(newSelection.join(", "));
+                                  } else {
+                                    // Remove the appliance from the selection
+                                    const newSelection =
+                                      selectedAppliances.filter(
+                                        (p) => p !== appliance
+                                      );
+                                    field.onChange(newSelection.join(", "));
+                                  }
+                                }}
+                              >
+                                {appliance}
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Pads">Pads</SelectItem>
-                        <SelectItem value="Anterior Bite Plate">
-                          Anterior Bite Plate
-                        </SelectItem>
-                        <SelectItem value="Retainers">Retainers</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {showOtherInput && (
-                      <Input
-                        placeholder="Specify other appliance"
-                        value={otherValue}
-                        onChange={handleOtherApplianceChange}
-                        className="mt-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      />
-                    )}
-                    <FormMessage className="text-red-500 text-xs" />
-                  </FormItem>
-                )}
+                      <FormMessage className="text-red-500 text-xs" />
+                    </FormItem>
+                  );
+                }}
               />
 
               {/* Amount Paid */}
@@ -501,13 +636,7 @@ const NewTreatmentCycleForm: React.FC<NewTreatmentCycleFormProps> = ({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="Cash">Cash</SelectItem>
-                        <SelectItem value="Credit Card">Credit Card</SelectItem>
-                        <SelectItem value="Debit Card">Debit Card</SelectItem>
-                        <SelectItem value="Bank Transfer">
-                          Bank Transfer
-                        </SelectItem>
                         <SelectItem value="GCash">GCash</SelectItem>
-                        <SelectItem value="Maya">Maya</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage className="text-red-500 text-xs" />

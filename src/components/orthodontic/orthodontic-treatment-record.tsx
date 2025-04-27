@@ -31,7 +31,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Separator } from "@/components/ui/separator";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, ChevronsUpDown } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -41,8 +41,15 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const treatmentSchema = z.object({
+// Schema for creating new records - strict validation
+const newRecordSchema = z.object({
   appt_no: z.string().min(1, "Appointment number is required"),
   date: z.string().min(1, "Date is required"),
   arch_wire: z.string().min(1, "Arch wire is required"),
@@ -62,6 +69,26 @@ const treatmentSchema = z.object({
   treatment_cycle: z.union([z.number(), z.null()]).optional(),
   balance: z.union([z.number(), z.null()]).optional(),
 });
+
+// Schema for editing records - relaxed validation
+const editRecordSchema = z.object({
+  appt_no: z.string().min(1, "Appointment number is required"),
+  date: z.string().min(1, "Date is required"),
+  arch_wire: z.string().min(1, "Arch wire is required"),
+  procedure: z.string().optional(),
+  appliances: z.string().optional(),
+  // No validation for these fields when editing
+  contract_price: z.any().optional(),
+  contract_months: z.any().optional(),
+  amount_paid: z.any().optional(),
+  next_schedule: z.string().optional(),
+  mode_of_payment: z.string().optional(),
+  treatment_cycle: z.any().optional(),
+  balance: z.any().optional(),
+});
+
+// Use the appropriate schema based on whether we're editing or creating
+const treatmentSchema = z.union([newRecordSchema, editRecordSchema]);
 
 // Define the form values type based on the Zod schema
 type TreatmentFormValues = z.infer<typeof treatmentSchema>;
@@ -117,15 +144,14 @@ const OrthodonticTreatmentRecordForm: React.FC<
       return undefined;
     }
   );
-  const [showOtherInput, setShowOtherInput] = useState(false);
-  const [otherValue, setOtherValue] = useState(initialData?.appliances || "");
+  // No longer need showOtherInput or otherValue with the new multi-select implementation
 
   // Popover states for calendar controls
   const treatmentDatePopover = usePopoverClose();
   const nextSchedulePopover = usePopoverClose();
 
   const form = useForm<TreatmentFormValues>({
-    resolver: zodResolver(treatmentSchema),
+    resolver: zodResolver(isEditing ? editRecordSchema : newRecordSchema),
     defaultValues: initialData
       ? {
           appt_no: initialData.appt_no || defaultAppointmentNumber || "",
@@ -157,20 +183,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
         },
   });
 
-  // Initialize appliances field state when component mounts
-  useEffect(() => {
-    const appliancesValue = form.getValues("appliances");
-    if (appliancesValue) {
-      if (
-        ["Pads", "Anterior Bite Plate", "Retainers"].includes(appliancesValue)
-      ) {
-        setShowOtherInput(false);
-      } else {
-        setShowOtherInput(true);
-        setOtherValue(appliancesValue);
-      }
-    }
-  }, [form]);
+  // No longer need to initialize appliances field state with the new multi-select implementation
 
   // Fetch the next appointment number and patient details when the component mounts
   useEffect(() => {
@@ -270,14 +283,24 @@ const OrthodonticTreatmentRecordForm: React.FC<
     (data) => {
       console.log("Form submitted with data:", data); // Add logging
 
-      // Make sure arch_wire is not empty
+      // Make sure arch_wire is not empty (required for both new and edit)
       if (!data.arch_wire || data.arch_wire.trim() === "") {
-        toast.error("Arch wire is required");
+        toast.error("At least one arch wire must be selected");
         return;
       }
 
-      // For first appointment, make sure contract_price and contract_months are provided
-      if (data.appt_no === "1" && !isEditing) {
+      if (isEditing) {
+        // When editing, we don't need additional validation
+        // Just pass the data as is - the schema validation is already relaxed
+        console.log("Editing mode - skipping additional validation");
+        onSubmit(data);
+        return;
+      }
+
+      // Additional validation only for new records
+
+      // For first appointment in a new record, make sure contract_price and contract_months are provided
+      if (data.appt_no === "1") {
         if (data.contract_price === undefined || data.contract_price === null) {
           toast.error("Contract price is required for the first appointment");
           return;
@@ -293,7 +316,7 @@ const OrthodonticTreatmentRecordForm: React.FC<
         }
       }
 
-      // Make sure amount_paid is provided
+      // Make sure amount_paid is provided for new records
       if (data.amount_paid === undefined || data.amount_paid === null) {
         toast.error("Amount paid is required");
         return;
@@ -345,15 +368,14 @@ const OrthodonticTreatmentRecordForm: React.FC<
                             loading ? "Loading..." : "Enter appointment number"
                           }
                           className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10 bg-gray-100"
-                          disabled={!(isEditing && field.value === "1")}
+                          disabled={true}
                           {...field}
                         />
                       </FormControl>
                       {patientId !== undefined && (
                         <FormDescription className="text-xs text-gray-500">
-                          {field.value === "1" && isEditing
-                            ? "Appointment number 1 can be edited."
-                            : "Appointment number is automatically assigned and cannot be edited."}
+                          Appointment number is automatically assigned and
+                          cannot be edited.
                         </FormDescription>
                       )}
                       <FormMessage className="text-red-500 text-xs" />
@@ -459,106 +481,224 @@ const OrthodonticTreatmentRecordForm: React.FC<
                 <FormField
                   control={form.control}
                   name="arch_wire"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col space-y-1.5">
-                      <FormLabel className="text-gray-700 font-medium">
-                        Arch Wire <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter arch wire details"
-                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 text-xs" />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    // Parse the comma-separated string into an array
+                    const selectedWires = field.value
+                      ? field.value.split(", ")
+                      : [];
+
+                    // List of all available arch wires
+                    const archWireOptions = [
+                      "Upper 012 niti",
+                      "Upper 014 niti",
+                      "Upper 016 niti",
+                      "Upper 016 x.22 niti",
+                      "Upper 016 SS",
+                      "Upper 016 x.22 SS",
+                      "Lower 012 niti",
+                      "Lower 014 niti",
+                      "Lower 016 niti",
+                      "Lower 016 x.22 niti",
+                      "Lower 016 SS",
+                      "Lower 016 x.22 SS",
+                    ];
+
+                    return (
+                      <FormItem className="flex flex-col space-y-1.5">
+                        <FormLabel className="text-gray-700 font-medium">
+                          Arch Wire <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-between border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10 font-normal"
+                              >
+                                {selectedWires.length > 0
+                                  ? selectedWires.length === 1
+                                    ? selectedWires[0]
+                                    : `${selectedWires.length} arch wires selected`
+                                  : "Select arch wires"}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-full min-w-[200px] max-h-[300px] overflow-auto">
+                              {archWireOptions.map((wire) => (
+                                <DropdownMenuCheckboxItem
+                                  key={wire}
+                                  checked={selectedWires.includes(wire)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      // Add the wire to the selection
+                                      const newSelection = [
+                                        ...selectedWires,
+                                        wire,
+                                      ];
+                                      field.onChange(newSelection.join(", "));
+                                    } else {
+                                      // Remove the wire from the selection
+                                      const newSelection = selectedWires.filter(
+                                        (w) => w !== wire
+                                      );
+                                      field.onChange(newSelection.join(", "));
+                                    }
+                                  }}
+                                >
+                                  {wire}
+                                </DropdownMenuCheckboxItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </FormControl>
+                        <FormMessage className="text-red-500 text-xs" />
+                      </FormItem>
+                    );
+                  }}
                 />
                 <FormField
                   control={form.control}
                   name="procedure"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col space-y-1.5">
-                      <FormLabel className="text-gray-700 font-medium">
-                        Procedure
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter procedure"
-                          className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 text-xs" />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    // Parse the comma-separated string into an array
+                    const selectedProcedures = field.value
+                      ? field.value.split(", ")
+                      : [];
+
+                    // List of all available procedures
+                    const procedureOptions = [
+                      "Upper Adjustment",
+                      "Lower Adjustment",
+                      "Upper/Lower Adjustment",
+                    ];
+
+                    return (
+                      <FormItem className="flex flex-col space-y-1.5">
+                        <FormLabel className="text-gray-700 font-medium">
+                          Procedure
+                        </FormLabel>
+                        <FormControl>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-between border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10 font-normal"
+                              >
+                                {selectedProcedures.length > 0
+                                  ? selectedProcedures.length === 1
+                                    ? selectedProcedures[0]
+                                    : `${selectedProcedures.length} procedures selected`
+                                  : "Select procedures"}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-full min-w-[200px] max-h-[300px] overflow-auto">
+                              {procedureOptions.map((procedure) => (
+                                <DropdownMenuCheckboxItem
+                                  key={procedure}
+                                  checked={selectedProcedures.includes(
+                                    procedure
+                                  )}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      // Add the procedure to the selection
+                                      const newSelection = [
+                                        ...selectedProcedures,
+                                        procedure,
+                                      ];
+                                      field.onChange(newSelection.join(", "));
+                                    } else {
+                                      // Remove the procedure from the selection
+                                      const newSelection =
+                                        selectedProcedures.filter(
+                                          (p) => p !== procedure
+                                        );
+                                      field.onChange(newSelection.join(", "));
+                                    }
+                                  }}
+                                >
+                                  {procedure}
+                                </DropdownMenuCheckboxItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </FormControl>
+                        <FormMessage className="text-red-500 text-xs" />
+                      </FormItem>
+                    );
+                  }}
                 />
                 <FormField
                   control={form.control}
                   name="appliances"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col space-y-1.5">
-                      <FormLabel className="text-gray-700 font-medium">
-                        Appliances
-                      </FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          if (value === "Others") {
-                            setShowOtherInput(true);
-                            // Keep the current value if switching to Others
-                            if (
-                              field.value &&
-                              field.value !== "Others" &&
-                              ![
-                                "Pads",
-                                "Anterior Bite Plate",
-                                "Retainers",
-                              ].includes(field.value)
-                            ) {
-                              setOtherValue(field.value);
-                            }
-                          } else {
-                            setShowOtherInput(false);
-                            field.onChange(value);
-                          }
-                        }}
-                        value={showOtherInput ? "Others" : field.value || ""}
-                      >
+                  render={({ field }) => {
+                    // Parse the comma-separated appliances into an array
+                    const selectedAppliances = field.value
+                      ? field.value.split(", ")
+                      : [];
+
+                    // Define the appliance options - only the three specified options
+                    const applianceOptions = [
+                      "Pads",
+                      "Anterior Bite Plate",
+                      "Retainers",
+                    ];
+
+                    return (
+                      <FormItem className="flex flex-col space-y-1.5">
+                        <FormLabel className="text-gray-700 font-medium">
+                          Appliances
+                        </FormLabel>
                         <FormControl>
-                          <SelectTrigger className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10">
-                            <SelectValue placeholder="Select appliance" />
-                          </SelectTrigger>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-between border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10 font-normal"
+                              >
+                                {selectedAppliances.length > 0
+                                  ? selectedAppliances.length === 1
+                                    ? selectedAppliances[0]
+                                    : `${selectedAppliances.length} appliances selected`
+                                  : "Select appliances"}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-full min-w-[200px] max-h-[300px] overflow-auto">
+                              {applianceOptions.map((appliance) => (
+                                <DropdownMenuCheckboxItem
+                                  key={appliance}
+                                  checked={selectedAppliances.includes(
+                                    appliance
+                                  )}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      // Add the appliance to the selection
+                                      const newSelection = [
+                                        ...selectedAppliances,
+                                        appliance,
+                                      ];
+                                      field.onChange(newSelection.join(", "));
+                                    } else {
+                                      // Remove the appliance from the selection
+                                      const newSelection =
+                                        selectedAppliances.filter(
+                                          (p) => p !== appliance
+                                        );
+                                      field.onChange(newSelection.join(", "));
+                                    }
+                                  }}
+                                >
+                                  {appliance}
+                                </DropdownMenuCheckboxItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Pads">Pads</SelectItem>
-                          <SelectItem value="Anterior Bite Plate">
-                            Anterior Bite Plate
-                          </SelectItem>
-                          <SelectItem value="Retainers">Retainers</SelectItem>
-                          <SelectItem value="Others">Others</SelectItem>
-                        </SelectContent>
-                      </Select>
-
-                      {showOtherInput && (
-                        <div className="mt-2">
-                          <Input
-                            placeholder="Specify other appliance"
-                            className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10"
-                            value={otherValue}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              setOtherValue(value);
-                              field.onChange(value);
-                            }}
-                          />
-                        </div>
-                      )}
-
-                      <FormMessage className="text-red-500 text-xs" />
-                    </FormItem>
-                  )}
+                        <FormMessage className="text-red-500 text-xs" />
+                      </FormItem>
+                    );
+                  }}
                 />
               </div>
             </div>
