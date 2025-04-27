@@ -907,7 +907,7 @@ export function getPatientDetails(
                contract_price, contract_months, amount_paid, mode_of_payment, next_schedule, balance
         FROM orthodontic_treatment_records
         WHERE patient_id = ?
-        ORDER BY date DESC
+        ORDER BY treatment_cycle DESC, CAST(appt_no AS INTEGER) ASC
       `);
       treatmentRecords = recordsStmt.all(
         patientId

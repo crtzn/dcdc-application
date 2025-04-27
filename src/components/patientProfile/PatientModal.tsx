@@ -715,6 +715,15 @@ const PatientDetailsModal = ({
           recordsByCycle[cycle].push(record);
         });
 
+        // Sort records within each cycle by appointment number
+        Object.keys(recordsByCycle).forEach((cycle) => {
+          recordsByCycle[cycle].sort((a, b) => {
+            const apptNoA = parseInt(a.appt_no);
+            const apptNoB = parseInt(b.appt_no);
+            return apptNoA - apptNoB; // Sort in ascending order by appointment number
+          });
+        });
+
         const sortedCycles = Object.keys(recordsByCycle)
           .map(Number)
           .sort((a, b) => a - b);
@@ -1814,6 +1823,15 @@ const PatientDetailsModal = ({
         recordsByCycle[cycle] = [];
       }
       recordsByCycle[cycle].push(record);
+    });
+
+    // Sort records within each cycle by appointment number
+    Object.keys(recordsByCycle).forEach((cycle) => {
+      recordsByCycle[cycle].sort((a, b) => {
+        const apptNoA = parseInt(a.appt_no);
+        const apptNoB = parseInt(b.appt_no);
+        return apptNoA - apptNoB; // Sort in ascending order by appointment number
+      });
     });
 
     // Sort cycles in descending order (newest first)
