@@ -442,6 +442,14 @@ const PatientDetailsModal = ({
     const logoWidth = 30;
     const logoHeight = 30;
 
+    // Helper function to format currency with peso sign
+    const formatCurrency = (amount: number) => {
+      return `P${amount.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    };
+
     // Function to add header on each page
     const addHeader = async () => {
       // Use a path that works in both development and production
@@ -700,10 +708,7 @@ const PatientDetailsModal = ({
           doc.setFontSize(10);
           doc.setFont("helvetica", "normal");
           doc.text(
-            `Total Payments: Php ${totalPaid.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}`,
+            `Total Payments: ${formatCurrency(totalPaid)}`,
             margin,
             yOffset
           );
@@ -739,15 +744,9 @@ const PatientDetailsModal = ({
 
               return [
                 formattedDate,
-                `Php ${payment.amount_paid.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}`,
+                formatCurrency(payment.amount_paid),
                 payment.payment_method,
-                `Php ${payment.remaining_balance.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}`,
+                formatCurrency(payment.remaining_balance),
                 payment.notes || "",
               ];
             }
@@ -813,10 +812,7 @@ const PatientDetailsModal = ({
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
             doc.text(
-              `Total Payments: Php ${totalPaid.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}`,
+              `Total Payments: ${formatCurrency(totalPaid)}`,
               margin,
               yOffset
             );
@@ -862,23 +858,10 @@ const PatientDetailsModal = ({
               formatValue(record.procedure),
               formatValue(record.dentist_name),
               record.amount_charged
-                ? `Php ${record.amount_charged.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`
+                ? formatCurrency(record.amount_charged)
                 : "N/A",
-              record.amount_paid
-                ? `Php ${record.amount_paid.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`
-                : "N/A",
-              record.balance
-                ? `Php ${record.balance.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`
-                : "N/A",
+              record.amount_paid ? formatCurrency(record.amount_paid) : "N/A",
+              record.balance ? formatCurrency(record.balance) : "N/A",
               formatValue(record.mode_of_payment),
             ];
           }
@@ -971,12 +954,24 @@ const PatientDetailsModal = ({
             (sum, record) => sum + (record.amount_paid || 0),
             0
           );
-          const cycleBalance = Math.max(0, cycleContractPrice - cycleTotalPaid);
 
-          const cardWidth = usableWidth / 4 - 4;
+          // Calculate total additional charges for this cycle
+          const cycleTotalAdditionalCharges = cycleRecords.reduce(
+            (sum, record) => sum + (record.additional_charges_total || 0),
+            0
+          );
+
+          // Update the balance calculation to include additional charges
+          const cycleBalance = Math.max(
+            0,
+            cycleContractPrice + cycleTotalAdditionalCharges - cycleTotalPaid
+          );
+
+          // Adjust for 5 cards instead of 4 (adding Additional Charges card)
+          const cardWidth = usableWidth / 5 - 4;
           const cardHeight = 25;
 
-          for (let i = 0; i < 4; i++) {
+          for (let i = 0; i < 5; i++) {
             const cardX = margin + (cardWidth + 4) * i;
             doc.setFillColor(245, 250, 255);
             doc.rect(cardX, yOffset, cardWidth, cardHeight, "F");
@@ -993,10 +988,7 @@ const PatientDetailsModal = ({
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
           doc.text(
-            `Php ${cycleContractPrice.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}`,
+            formatCurrency(cycleContractPrice),
             margin + 5,
             yOffset + 17
           );
@@ -1019,48 +1011,59 @@ const PatientDetailsModal = ({
           doc.setTextColor(0, 102, 0);
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
-          doc.text(
-            `Php ${cycleTotalPaid.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}`,
-            card3X + 5,
-            yOffset + 17
-          );
+          doc.text(formatCurrency(cycleTotalPaid), card3X + 5, yOffset + 17);
 
+          // Add Additional Charges card
           const card4X = margin + (cardWidth + 4) * 3;
           doc.setTextColor(39, 118, 171);
           doc.setFont("helvetica", "bold");
           doc.setFontSize(8);
-          doc.text("Cycle Balance", card4X + 5, yOffset + 7);
-          doc.setTextColor(204, 0, 0);
+          doc.text("Additional Charges", card4X + 5, yOffset + 7);
+          doc.setTextColor(128, 0, 128); // Purple color for additional charges
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
           doc.text(
-            `Php ${cycleBalance.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}`,
+            formatCurrency(cycleTotalAdditionalCharges),
             card4X + 5,
             yOffset + 17
+          );
+
+          const card5X = margin + (cardWidth + 4) * 4;
+          doc.setTextColor(39, 118, 171);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(8);
+          doc.text("Total Balance", card5X + 5, yOffset + 7);
+          doc.setTextColor(204, 0, 0);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          doc.text(formatCurrency(cycleBalance), card5X + 5, yOffset + 17);
+
+          // Add small note about calculation
+          doc.setFontSize(6);
+          doc.setTextColor(100, 100, 100);
+          doc.text(
+            "(Contract Price + Additional Charges - Total Paid)",
+            card5X + 5,
+            yOffset + 22
           );
 
           yOffset += cardHeight + 10;
           await checkPage();
 
-          // Updated Table Headers to Include Appliances
+          // Updated Table Headers to Include Appliances and Additional Charges
           const headers = [
             "Appt #",
             "Date",
             "Arch Wire",
             "Procedure",
-            "Appliances", // New column
+            "Appliances",
+            "Additional Charges",
             "Amount Paid",
             "Payment Mode",
             "Next Sched.",
           ];
-          // Adjusted column widths to accommodate Appliances (total = 170mm)
-          const columnWidths = [15, 20, 25, 30, 25, 25, 20, 20];
+          // Adjusted column widths to accommodate all columns (total = 170mm)
+          const columnWidths = [15, 20, 20, 25, 20, 25, 20, 15, 20];
 
           // Prepare data for this cycle
           const data = recordsByCycle[cycle].map((record) => {
@@ -1093,18 +1096,53 @@ const PatientDetailsModal = ({
                   .substring(2)}`
               : "N/A";
 
+            // Format additional charges
+            let additionalChargesText = "None";
+            if ((record.additional_charges_total || 0) > 0) {
+              // Only show the details without the total amount
+              const chargeDetails = [];
+              if ((record.recement_bracket_count || 0) > 0) {
+                const count = record.recement_bracket_count || 0;
+                chargeDetails.push(`Recement: ${count}`);
+              }
+              if ((record.replacement_bracket_count || 0) > 0) {
+                const count = record.replacement_bracket_count || 0;
+                chargeDetails.push(`Replacement: ${count}`);
+              }
+              if ((record.rebracket_count || 0) > 0) {
+                const count = record.rebracket_count || 0;
+                chargeDetails.push(`Rebracket: ${count}`);
+              }
+              if ((record.xray_count || 0) > 0) {
+                const count = record.xray_count || 0;
+                chargeDetails.push(`X-ray: ${count}`);
+              }
+              if ((record.dental_kit_count || 0) > 0) {
+                const count = record.dental_kit_count || 0;
+                chargeDetails.push(`Dental Kit: ${count}`);
+              }
+              if ((record.kabayoshi_count || 0) > 0) {
+                const count = record.kabayoshi_count || 0;
+                chargeDetails.push(`Kabayoshi: ${count}`);
+              }
+              if ((record.lingual_button_count || 0) > 0) {
+                const count = record.lingual_button_count || 0;
+                chargeDetails.push(`Lingual Button: ${count}`);
+              }
+
+              if (chargeDetails.length > 0) {
+                additionalChargesText = chargeDetails.join("\n");
+              }
+            }
+
             return [
               formatValue(record.appt_no),
               formattedDate,
               formatValue(record.arch_wire),
               formatValue(record.procedure),
-              formatValue(record.appliances), // New column data
-              record.amount_paid
-                ? `Php ${record.amount_paid.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`
-                : "N/A",
+              formatValue(record.appliances),
+              additionalChargesText,
+              record.amount_paid ? formatCurrency(record.amount_paid) : "N/A",
               formatValue(record.mode_of_payment),
               formattedNextSchedule,
             ];
@@ -2152,13 +2190,20 @@ const PatientDetailsModal = ({
               </p>
             </div>
             <div className="bg-white p-3 rounded-md shadow-sm">
-              <p className="text-sm text-gray-500">Contract Balance</p>
+              <p className="text-sm text-gray-500">Total Balance</p>
               <p className="text-xl font-bold text-red-600">
                 ₱
-                {(orthoPatient.current_balance || 0).toLocaleString(undefined, {
+                {(
+                  (orthoPatient.current_contract_price || 0) +
+                  totalAdditionalCharges -
+                  totalPaid
+                ).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                (Contract Price + Additional Charges - Total Paid)
               </p>
               {/* Payment button removed as per requirement */}
             </div>
@@ -2235,78 +2280,37 @@ const PatientDetailsModal = ({
                         <TableCell>
                           {(record.additional_charges_total || 0) > 0 ? (
                             <div className="space-y-1">
-                              <span className="font-medium text-blue-600">
-                                Total: ₱
-                                {(
-                                  record.additional_charges_total || 0
-                                ).toLocaleString()}
-                              </span>
-                              <div className="text-xs text-gray-500 mt-1">
+                              <div className="text-xs text-gray-700">
                                 {(record.recement_bracket_count || 0) > 0 && (
                                   <div>
-                                    Recement: {record.recement_bracket_count} (₱
-                                    {(
-                                      (record.recement_bracket_count || 0) * 100
-                                    ).toLocaleString()}
-                                    )
+                                    Recement: {record.recement_bracket_count}
                                   </div>
                                 )}
                                 {(record.replacement_bracket_count || 0) >
                                   0 && (
                                   <div>
                                     Replacement:{" "}
-                                    {record.replacement_bracket_count} (₱
-                                    {(
-                                      (record.replacement_bracket_count || 0) *
-                                      500
-                                    ).toLocaleString()}
-                                    )
+                                    {record.replacement_bracket_count}
                                   </div>
                                 )}
                                 {(record.rebracket_count || 0) > 0 && (
-                                  <div>
-                                    Rebracket: {record.rebracket_count} (₱
-                                    {(
-                                      (record.rebracket_count || 0) * 500
-                                    ).toLocaleString()}
-                                    )
-                                  </div>
+                                  <div>Rebracket: {record.rebracket_count}</div>
                                 )}
                                 {(record.xray_count || 0) > 0 && (
-                                  <div>
-                                    X-ray: {record.xray_count} (₱
-                                    {(
-                                      (record.xray_count || 0) * 600
-                                    ).toLocaleString()}
-                                    )
-                                  </div>
+                                  <div>X-ray: {record.xray_count}</div>
                                 )}
                                 {(record.dental_kit_count || 0) > 0 && (
                                   <div>
-                                    Dental Kit: {record.dental_kit_count} (₱
-                                    {(
-                                      (record.dental_kit_count || 0) * 200
-                                    ).toLocaleString()}
-                                    )
+                                    Dental Kit: {record.dental_kit_count}
                                   </div>
                                 )}
                                 {(record.kabayoshi_count || 0) > 0 && (
-                                  <div>
-                                    Kabayoshi: {record.kabayoshi_count} (₱
-                                    {(
-                                      (record.kabayoshi_count || 0) * 200
-                                    ).toLocaleString()}
-                                    )
-                                  </div>
+                                  <div>Kabayoshi: {record.kabayoshi_count}</div>
                                 )}
                                 {(record.lingual_button_count || 0) > 0 && (
                                   <div>
                                     Lingual Button:{" "}
-                                    {record.lingual_button_count} (₱
-                                    {(
-                                      (record.lingual_button_count || 0) * 200
-                                    ).toLocaleString()}
-                                    )
+                                    {record.lingual_button_count}
                                   </div>
                                 )}
                               </div>
