@@ -728,3 +728,19 @@ ipcMain.handle("get-logo-path", () => {
     return "/desktopIcon.png"; // Fallback to the original path
   }
 });
+
+// Font path handler
+ipcMain.handle("get-font-path", (_event, fontFileName) => {
+  try {
+    // In development mode, use the app directory path
+    if (isDev()) {
+      return path.join(app.getAppPath(), "fonts", fontFileName);
+    } else {
+      // In production mode, use the resources directory path
+      return path.join(process.resourcesPath, "fonts", fontFileName);
+    }
+  } catch (error) {
+    console.error("IPC get-font-path error:", error);
+    return `/fonts/${fontFileName}`; // Fallback to the original path
+  }
+});

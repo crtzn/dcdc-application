@@ -9,6 +9,10 @@
     {
       "from": "desktopIcon.png",
       "to": "desktopIcon.png"
+    },
+    {
+      "from": "fonts",
+      "to": "fonts"
     }
   ],
   "icon": "./desktopIcon.png",

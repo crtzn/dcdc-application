@@ -345,14 +345,15 @@ const OrthodonticTreatmentRecordForm: React.FC<
                             loading ? "Loading..." : "Enter appointment number"
                           }
                           className="w-full border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 h-10 bg-gray-100"
-                          disabled={true}
+                          disabled={!(isEditing && field.value === "1")}
                           {...field}
                         />
                       </FormControl>
                       {patientId !== undefined && (
                         <FormDescription className="text-xs text-gray-500">
-                          Appointment number is automatically assigned and
-                          cannot be edited.
+                          {field.value === "1" && isEditing
+                            ? "Appointment number 1 can be edited."
+                            : "Appointment number is automatically assigned and cannot be edited."}
                         </FormDescription>
                       )}
                       <FormMessage className="text-red-500 text-xs" />

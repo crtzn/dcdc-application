@@ -195,4 +195,6 @@ electron.contextBridge.exposeInMainWorld("api", {
 
   // Resource path functions
   getLogoPath: () => ipcRenderer.invoke("get-logo-path"),
+  getFontPath: (fontFileName: string) =>
+    ipcRenderer.invoke("get-font-path", fontFileName),
 });
