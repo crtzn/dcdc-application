@@ -147,6 +147,14 @@ function initializeDatabase() {
         next_schedule TEXT,
         mode_of_payment TEXT,
         balance REAL,
+        recement_bracket_count INTEGER DEFAULT 0,
+        replacement_bracket_count INTEGER DEFAULT 0,
+        rebracket_count INTEGER DEFAULT 0,
+        xray_count INTEGER DEFAULT 0,
+        dental_kit_count INTEGER DEFAULT 0,
+        kabayoshi_count INTEGER DEFAULT 0,
+        lingual_button_count INTEGER DEFAULT 0,
+        additional_charges_total REAL DEFAULT 0,
         FOREIGN KEY (patient_id) REFERENCES orthodontic_patients(patient_id)
       )
     `);
@@ -413,8 +421,10 @@ export function addOrthodonticTreatmentRecord(
       const stmt = db.prepare(`
         INSERT INTO orthodontic_treatment_records (
           patient_id, treatment_cycle, appt_no, date, arch_wire, procedure, appliances,
-          contract_price, contract_months, amount_paid, mode_of_payment, next_schedule, balance
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          contract_price, contract_months, amount_paid, mode_of_payment, next_schedule, balance,
+          recement_bracket_count, replacement_bracket_count, rebracket_count, xray_count,
+          dental_kit_count, kabayoshi_count, lingual_button_count, additional_charges_total
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       // Calculate balance for this record
@@ -446,6 +456,25 @@ export function addOrthodonticTreatmentRecord(
         }
       }
 
+      // Calculate additional charges total
+      const recement_bracket_count = record.recement_bracket_count || 0;
+      const replacement_bracket_count = record.replacement_bracket_count || 0;
+      const rebracket_count = record.rebracket_count || 0;
+      const xray_count = record.xray_count || 0;
+      const dental_kit_count = record.dental_kit_count || 0;
+      const kabayoshi_count = record.kabayoshi_count || 0;
+      const lingual_button_count = record.lingual_button_count || 0;
+
+      // Calculate total additional charges based on the prices
+      const additional_charges_total =
+        recement_bracket_count * 100 +
+        replacement_bracket_count * 500 +
+        rebracket_count * 500 +
+        xray_count * 600 +
+        dental_kit_count * 200 +
+        kabayoshi_count * 200 +
+        lingual_button_count * 200;
+
       stmt.run(
         record.patient_id,
         record.treatment_cycle || 1,
@@ -459,7 +488,15 @@ export function addOrthodonticTreatmentRecord(
         record.amount_paid || null,
         record.mode_of_payment || null,
         record.next_schedule || null,
-        balance
+        balance,
+        recement_bracket_count,
+        replacement_bracket_count,
+        rebracket_count,
+        xray_count,
+        dental_kit_count,
+        kabayoshi_count,
+        lingual_button_count,
+        additional_charges_total
       );
 
       // Check if this is the first appointment (appt_no = 1) and has contract details
@@ -904,7 +941,9 @@ export function getPatientDetails(
       // Fetch treatment records
       const recordsStmt = db.prepare(`
         SELECT record_id, patient_id, treatment_cycle, appt_no, date, arch_wire, procedure, appliances,
-               contract_price, contract_months, amount_paid, mode_of_payment, next_schedule, balance
+               contract_price, contract_months, amount_paid, mode_of_payment, next_schedule, balance,
+               recement_bracket_count, replacement_bracket_count, rebracket_count, xray_count,
+               dental_kit_count, kabayoshi_count, lingual_button_count, additional_charges_total
         FROM orthodontic_treatment_records
         WHERE patient_id = ?
         ORDER BY treatment_cycle DESC, CAST(appt_no AS INTEGER) ASC
@@ -1683,7 +1722,9 @@ export function updateOrthodonticTreatmentRecord(
     try {
       // Get the current record to check if we're updating the first appointment
       const getRecordStmt = db.prepare(`
-        SELECT patient_id, treatment_cycle, appt_no, contract_price, contract_months, amount_paid
+        SELECT patient_id, treatment_cycle, appt_no, contract_price, contract_months, amount_paid,
+               recement_bracket_count, replacement_bracket_count, rebracket_count, xray_count,
+               dental_kit_count, kabayoshi_count, lingual_button_count, additional_charges_total
         FROM orthodontic_treatment_records
         WHERE record_id = ?
       `);
@@ -1696,6 +1737,14 @@ export function updateOrthodonticTreatmentRecord(
             contract_price: number | null;
             contract_months: number | null;
             amount_paid: number | null;
+            recement_bracket_count: number | null;
+            replacement_bracket_count: number | null;
+            rebracket_count: number | null;
+            xray_count: number | null;
+            dental_kit_count: number | null;
+            kabayoshi_count: number | null;
+            lingual_button_count: number | null;
+            additional_charges_total: number | null;
           }
         | undefined;
 
@@ -1852,6 +1901,72 @@ export function updateOrthodonticTreatmentRecord(
             updateRecordBalanceStmt.run(newBalance, recordId);
           }
         }
+      }
+
+      // Check if any additional charges fields were updated
+      if (
+        record.recement_bracket_count !== undefined ||
+        record.replacement_bracket_count !== undefined ||
+        record.rebracket_count !== undefined ||
+        record.xray_count !== undefined ||
+        record.dental_kit_count !== undefined ||
+        record.kabayoshi_count !== undefined ||
+        record.lingual_button_count !== undefined
+      ) {
+        // Get the current values for all additional charges fields
+        const recement_bracket_count =
+          record.recement_bracket_count !== undefined
+            ? record.recement_bracket_count
+            : currentRecord.recement_bracket_count || 0;
+
+        const replacement_bracket_count =
+          record.replacement_bracket_count !== undefined
+            ? record.replacement_bracket_count
+            : currentRecord.replacement_bracket_count || 0;
+
+        const rebracket_count =
+          record.rebracket_count !== undefined
+            ? record.rebracket_count
+            : currentRecord.rebracket_count || 0;
+
+        const xray_count =
+          record.xray_count !== undefined
+            ? record.xray_count
+            : currentRecord.xray_count || 0;
+
+        const dental_kit_count =
+          record.dental_kit_count !== undefined
+            ? record.dental_kit_count
+            : currentRecord.dental_kit_count || 0;
+
+        const kabayoshi_count =
+          record.kabayoshi_count !== undefined
+            ? record.kabayoshi_count
+            : currentRecord.kabayoshi_count || 0;
+
+        const lingual_button_count =
+          record.lingual_button_count !== undefined
+            ? record.lingual_button_count
+            : currentRecord.lingual_button_count || 0;
+
+        // Calculate the new total
+        const additional_charges_total =
+          recement_bracket_count * 100 +
+          replacement_bracket_count * 500 +
+          rebracket_count * 500 +
+          xray_count * 600 +
+          dental_kit_count * 200 +
+          kabayoshi_count * 200 +
+          lingual_button_count * 200;
+
+        // Update the additional_charges_total field
+        const updateTotalStmt = db.prepare(`
+          UPDATE orthodontic_treatment_records
+          SET additional_charges_total = ?
+          WHERE record_id = ?
+        `);
+
+        updateTotalStmt.run(additional_charges_total, recordId);
       }
 
       // Commit the transaction

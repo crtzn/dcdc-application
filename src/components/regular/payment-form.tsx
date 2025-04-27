@@ -180,7 +180,7 @@ const PaymentForm = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <div className="mb-2 text-gray-700 font-medium">
-              Current Balance
+              Contract Balance
             </div>
             <div className="p-3 bg-gray-100 rounded-md text-lg font-semibold text-red-600">
               ₱

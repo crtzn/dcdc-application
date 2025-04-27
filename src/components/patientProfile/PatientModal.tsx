@@ -335,6 +335,59 @@ const PatientDetailsModal = ({
           }
         }
 
+        // Additional charges fields
+        // Process recement_bracket_count
+        if (data.recement_bracket_count !== undefined) {
+          const numValue = Number(data.recement_bracket_count);
+          processedData.recement_bracket_count = isNaN(numValue) ? 0 : numValue;
+        }
+
+        // Process replacement_bracket_count
+        if (data.replacement_bracket_count !== undefined) {
+          const numValue = Number(data.replacement_bracket_count);
+          processedData.replacement_bracket_count = isNaN(numValue)
+            ? 0
+            : numValue;
+        }
+
+        // Process rebracket_count
+        if (data.rebracket_count !== undefined) {
+          const numValue = Number(data.rebracket_count);
+          processedData.rebracket_count = isNaN(numValue) ? 0 : numValue;
+        }
+
+        // Process xray_count
+        if (data.xray_count !== undefined) {
+          const numValue = Number(data.xray_count);
+          processedData.xray_count = isNaN(numValue) ? 0 : numValue;
+        }
+
+        // Process dental_kit_count
+        if (data.dental_kit_count !== undefined) {
+          const numValue = Number(data.dental_kit_count);
+          processedData.dental_kit_count = isNaN(numValue) ? 0 : numValue;
+        }
+
+        // Process kabayoshi_count
+        if (data.kabayoshi_count !== undefined) {
+          const numValue = Number(data.kabayoshi_count);
+          processedData.kabayoshi_count = isNaN(numValue) ? 0 : numValue;
+        }
+
+        // Process lingual_button_count
+        if (data.lingual_button_count !== undefined) {
+          const numValue = Number(data.lingual_button_count);
+          processedData.lingual_button_count = isNaN(numValue) ? 0 : numValue;
+        }
+
+        // Process additional_charges_total
+        if (data.additional_charges_total !== undefined) {
+          const numValue = Number(data.additional_charges_total);
+          processedData.additional_charges_total = isNaN(numValue)
+            ? 0
+            : numValue;
+        }
+
         console.log("Processed data for update:", processedData);
 
         console.log("Processing orthodontic treatment record update:", {
@@ -1588,7 +1641,7 @@ const PatientDetailsModal = ({
                   </p>
                 </div>
                 <div className="bg-white p-3 rounded-md shadow-sm">
-                  <p className="text-sm text-gray-500">Current Balance</p>
+                  <p className="text-sm text-gray-500">Contract Balance</p>
                   <p className="text-xl font-bold text-red-600">
                     ₱
                     {(orthoPatient.current_balance || 0).toLocaleString(
@@ -1835,7 +1888,7 @@ const PatientDetailsModal = ({
                 </p>
               </div>
               <div className="bg-white p-3 rounded-md shadow-sm">
-                <p className="text-sm text-gray-500">Current Balance</p>
+                <p className="text-sm text-gray-500">Contract Balance</p>
                 <p className="text-xl font-bold text-red-600">
                   ₱
                   {(orthoPatient.current_balance || 0).toLocaleString(
@@ -2008,11 +2061,15 @@ const PatientDetailsModal = ({
       (a, b) => parseInt(b) - parseInt(a)
     );
 
-    // Calculate total paid for current cycle
+    // Calculate total paid and additional charges for current cycle
     const currentCycle = orthoPatient.treatment_cycle?.toString() || "1";
     const currentCycleRecords = recordsByCycle[currentCycle] || [];
     const totalPaid = currentCycleRecords.reduce(
       (sum, record) => sum + (record.amount_paid || 0),
+      0
+    );
+    const totalAdditionalCharges = currentCycleRecords.reduce(
+      (sum, record) => sum + (record.additional_charges_total || 0),
       0
     );
 
@@ -2051,7 +2108,7 @@ const PatientDetailsModal = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mt-4">
             <div className="bg-white p-3 rounded-md shadow-sm">
               <p className="text-sm text-gray-500">Contract Price</p>
               <p className="text-xl font-bold text-blue-600">
@@ -2085,7 +2142,17 @@ const PatientDetailsModal = ({
               </p>
             </div>
             <div className="bg-white p-3 rounded-md shadow-sm">
-              <p className="text-sm text-gray-500">Current Balance</p>
+              <p className="text-sm text-gray-500">Additional Charges</p>
+              <p className="text-xl font-bold text-purple-600">
+                ₱
+                {totalAdditionalCharges.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+            </div>
+            <div className="bg-white p-3 rounded-md shadow-sm">
+              <p className="text-sm text-gray-500">Contract Balance</p>
               <p className="text-xl font-bold text-red-600">
                 ₱
                 {(orthoPatient.current_balance || 0).toLocaleString(undefined, {
@@ -2098,66 +2165,175 @@ const PatientDetailsModal = ({
           </div>
         </div>
 
-        {/* Treatment Records by Cycle - with scrolling container */}
-        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+        {/* Treatment Records by Cycle - with improved layout */}
+        <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
           {sortedCycles.map((cycle) => (
-            <div key={cycle} className="border rounded-lg overflow-hidden">
-              <div className="bg-gray-100 px-4 py-2 border-b sticky top-0 z-10">
-                <h3 className="font-medium">
+            <div
+              key={cycle}
+              className="border rounded-lg overflow-hidden shadow-sm"
+            >
+              <div className="bg-blue-50 px-4 py-3 border-b sticky top-0 z-10">
+                <h3 className="font-semibold text-blue-800">
                   Treatment Cycle #{cycle} Records
                 </h3>
               </div>
+
+              {/* Simplified table with fewer columns */}
               <div className="overflow-x-auto">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-gray-50">
                     <TableRow>
-                      <TableHead>Appointment</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Arch Wire</TableHead>
-                      <TableHead>Procedure</TableHead>
-                      <TableHead>Appliances</TableHead> {/* New column */}
-                      <TableHead>Amount Paid</TableHead>
-                      <TableHead>Mode of Payment</TableHead>
-                      <TableHead>Next Schedule</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="w-[60px]">Appt #</TableHead>
+                      <TableHead className="w-[100px]">Date</TableHead>
+                      <TableHead className="w-[180px]">Treatment</TableHead>
+                      <TableHead className="w-[200px]">
+                        Additional Charges
+                      </TableHead>
+                      <TableHead className="w-[100px]">Amount Paid</TableHead>
+                      <TableHead className="w-[100px]">Next Schedule</TableHead>
+                      <TableHead className="w-[60px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {recordsByCycle[cycle].map((record) => (
-                      <TableRow key={record.record_id}>
-                        <TableCell>
-                          {parseInt(record.appt_no) === 1 ? (
-                            <span className="text-black font-medium">
-                              {formatValue(record.appt_no)}
-                            </span>
-                          ) : (
-                            <span>{formatValue(record.appt_no)}</span>
-                          )}
+                      <TableRow
+                        key={record.record_id}
+                        className="hover:bg-gray-50"
+                      >
+                        <TableCell className="font-medium">
+                          {formatValue(record.appt_no)}
                         </TableCell>
                         <TableCell>{formatValue(record.date)}</TableCell>
                         <TableCell>
-                          <ArchWireDisplay value={record.arch_wire} />
+                          <div className="space-y-1">
+                            {record.procedure && (
+                              <div>
+                                <span className="text-xs font-medium text-gray-500">
+                                  Procedure:
+                                </span>
+                                <ProcedureDisplay value={record.procedure} />
+                              </div>
+                            )}
+                            {record.arch_wire && (
+                              <div>
+                                <span className="text-xs font-medium text-gray-500">
+                                  Arch Wire:
+                                </span>
+                                <ArchWireDisplay value={record.arch_wire} />
+                              </div>
+                            )}
+                            {record.appliances && (
+                              <div>
+                                <span className="text-xs font-medium text-gray-500">
+                                  Appliances:
+                                </span>
+                                <AppliancesDisplay value={record.appliances} />
+                              </div>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <ProcedureDisplay value={record.procedure} />
+                          {(record.additional_charges_total || 0) > 0 ? (
+                            <div className="space-y-1">
+                              <span className="font-medium text-blue-600">
+                                Total: ₱
+                                {(
+                                  record.additional_charges_total || 0
+                                ).toLocaleString()}
+                              </span>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {(record.recement_bracket_count || 0) > 0 && (
+                                  <div>
+                                    Recement: {record.recement_bracket_count} (₱
+                                    {(
+                                      (record.recement_bracket_count || 0) * 100
+                                    ).toLocaleString()}
+                                    )
+                                  </div>
+                                )}
+                                {(record.replacement_bracket_count || 0) >
+                                  0 && (
+                                  <div>
+                                    Replacement:{" "}
+                                    {record.replacement_bracket_count} (₱
+                                    {(
+                                      (record.replacement_bracket_count || 0) *
+                                      500
+                                    ).toLocaleString()}
+                                    )
+                                  </div>
+                                )}
+                                {(record.rebracket_count || 0) > 0 && (
+                                  <div>
+                                    Rebracket: {record.rebracket_count} (₱
+                                    {(
+                                      (record.rebracket_count || 0) * 500
+                                    ).toLocaleString()}
+                                    )
+                                  </div>
+                                )}
+                                {(record.xray_count || 0) > 0 && (
+                                  <div>
+                                    X-ray: {record.xray_count} (₱
+                                    {(
+                                      (record.xray_count || 0) * 600
+                                    ).toLocaleString()}
+                                    )
+                                  </div>
+                                )}
+                                {(record.dental_kit_count || 0) > 0 && (
+                                  <div>
+                                    Dental Kit: {record.dental_kit_count} (₱
+                                    {(
+                                      (record.dental_kit_count || 0) * 200
+                                    ).toLocaleString()}
+                                    )
+                                  </div>
+                                )}
+                                {(record.kabayoshi_count || 0) > 0 && (
+                                  <div>
+                                    Kabayoshi: {record.kabayoshi_count} (₱
+                                    {(
+                                      (record.kabayoshi_count || 0) * 200
+                                    ).toLocaleString()}
+                                    )
+                                  </div>
+                                )}
+                                {(record.lingual_button_count || 0) > 0 && (
+                                  <div>
+                                    Lingual Button:{" "}
+                                    {record.lingual_button_count} (₱
+                                    {(
+                                      (record.lingual_button_count || 0) * 200
+                                    ).toLocaleString()}
+                                    )
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-500">None</span>
+                          )}
                         </TableCell>
                         <TableCell>
-                          <AppliancesDisplay value={record.appliances} />
-                        </TableCell>
-                        {/* New column */}
-                        <TableCell>
-                          {record.amount_paid
-                            ? `₱${record.amount_paid.toLocaleString(undefined, {
+                          {record.amount_paid ? (
+                            <span className="font-medium text-green-600">
+                              ₱
+                              {record.amount_paid.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
-                              })}`
-                            : "N/A"}
+                              })}
+                            </span>
+                          ) : (
+                            <span className="text-gray-500">N/A</span>
+                          )}
                         </TableCell>
                         <TableCell>
-                          {formatValue(record.mode_of_payment)}
-                        </TableCell>
-                        <TableCell>
-                          {formatValue(record.next_schedule)}
+                          {record.next_schedule ? (
+                            formatValue(record.next_schedule)
+                          ) : (
+                            <span className="text-gray-500">None</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Button
@@ -2167,7 +2343,6 @@ const PatientDetailsModal = ({
                             }}
                             className="bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 px-2 flex items-center gap-1"
                             size="sm"
-                            disabled={false}
                           >
                             <Edit size={12} />
                             Edit

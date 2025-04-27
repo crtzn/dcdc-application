@@ -44,4 +44,13 @@ export interface OrthodonticTreatmentRecord {
   next_schedule?: string;
   mode_of_payment?: string;
   balance?: number;
+  // Additional charges
+  recement_bracket_count?: number;
+  replacement_bracket_count?: number;
+  rebracket_count?: number;
+  xray_count?: number;
+  dental_kit_count?: number;
+  kabayoshi_count?: number;
+  lingual_button_count?: number;
+  additional_charges_total?: number;
 }

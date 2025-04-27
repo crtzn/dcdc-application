@@ -68,6 +68,15 @@ const newRecordSchema = z.object({
   mode_of_payment: z.string().optional(),
   treatment_cycle: z.union([z.number(), z.null()]).optional(),
   balance: z.union([z.number(), z.null()]).optional(),
+  // Additional charges
+  recement_bracket_count: z.union([z.number().min(0), z.null()]).optional(),
+  replacement_bracket_count: z.union([z.number().min(0), z.null()]).optional(),
+  rebracket_count: z.union([z.number().min(0), z.null()]).optional(),
+  xray_count: z.union([z.number().min(0), z.null()]).optional(),
+  dental_kit_count: z.union([z.number().min(0), z.null()]).optional(),
+  kabayoshi_count: z.union([z.number().min(0), z.null()]).optional(),
+  lingual_button_count: z.union([z.number().min(0), z.null()]).optional(),
+  additional_charges_total: z.union([z.number().min(0), z.null()]).optional(),
 });
 
 // Schema for editing records - relaxed validation
@@ -85,6 +94,15 @@ const editRecordSchema = z.object({
   mode_of_payment: z.string().optional(),
   treatment_cycle: z.any().optional(),
   balance: z.any().optional(),
+  // Additional charges
+  recement_bracket_count: z.any().optional(),
+  replacement_bracket_count: z.any().optional(),
+  rebracket_count: z.any().optional(),
+  xray_count: z.any().optional(),
+  dental_kit_count: z.any().optional(),
+  kabayoshi_count: z.any().optional(),
+  lingual_button_count: z.any().optional(),
+  additional_charges_total: z.any().optional(),
 });
 
 // Use the appropriate schema based on whether we're editing or creating
@@ -166,6 +184,15 @@ const OrthodonticTreatmentRecordForm: React.FC<
           mode_of_payment: initialData.mode_of_payment || "Cash",
           treatment_cycle: initialData.treatment_cycle || 1,
           balance: initialData.balance,
+          // Additional charges
+          recement_bracket_count: initialData.recement_bracket_count || 0,
+          replacement_bracket_count: initialData.replacement_bracket_count || 0,
+          rebracket_count: initialData.rebracket_count || 0,
+          xray_count: initialData.xray_count || 0,
+          dental_kit_count: initialData.dental_kit_count || 0,
+          kabayoshi_count: initialData.kabayoshi_count || 0,
+          lingual_button_count: initialData.lingual_button_count || 0,
+          additional_charges_total: initialData.additional_charges_total || 0,
         }
       : {
           appt_no: defaultAppointmentNumber || "",
@@ -180,10 +207,95 @@ const OrthodonticTreatmentRecordForm: React.FC<
           mode_of_payment: "Cash", // Default to Cash as per user preference
           treatment_cycle: 1,
           balance: undefined,
+          // Additional charges
+          recement_bracket_count: 0,
+          replacement_bracket_count: 0,
+          rebracket_count: 0,
+          xray_count: 0,
+          dental_kit_count: 0,
+          kabayoshi_count: 0,
+          lingual_button_count: 0,
+          additional_charges_total: 0,
         },
   });
 
+  // Function to update the total additional charges
+  const updateAdditionalChargesTotal = () => {
+    // Get current values from form
+    const recement_bracket_count =
+      parseInt(form.getValues("recement_bracket_count")?.toString() || "0") ||
+      0;
+    const replacement_bracket_count =
+      parseInt(
+        form.getValues("replacement_bracket_count")?.toString() || "0"
+      ) || 0;
+    const rebracket_count =
+      parseInt(form.getValues("rebracket_count")?.toString() || "0") || 0;
+    const xray_count =
+      parseInt(form.getValues("xray_count")?.toString() || "0") || 0;
+    const dental_kit_count =
+      parseInt(form.getValues("dental_kit_count")?.toString() || "0") || 0;
+    const kabayoshi_count =
+      parseInt(form.getValues("kabayoshi_count")?.toString() || "0") || 0;
+    const lingual_button_count =
+      parseInt(form.getValues("lingual_button_count")?.toString() || "0") || 0;
+
+    // Calculate total
+    const total =
+      recement_bracket_count * 100 +
+      replacement_bracket_count * 500 +
+      rebracket_count * 500 +
+      xray_count * 600 +
+      dental_kit_count * 200 +
+      kabayoshi_count * 200 +
+      lingual_button_count * 200;
+
+    // Update form value
+    form.setValue("additional_charges_total", total);
+
+    // Log for debugging
+    console.log("Additional charges updated:", {
+      recement_bracket_count,
+      replacement_bracket_count,
+      rebracket_count,
+      xray_count,
+      dental_kit_count,
+      kabayoshi_count,
+      lingual_button_count,
+      total,
+    });
+  };
+
   // No longer need to initialize appliances field state with the new multi-select implementation
+
+  // Set up form watchers to automatically update additional charges total
+  // This is a better approach than using useEffect with form.watch() in dependencies
+  form.watch((_, { name }) => {
+    // Only update when additional charges fields change
+    if (
+      name === "recement_bracket_count" ||
+      name === "replacement_bracket_count" ||
+      name === "rebracket_count" ||
+      name === "xray_count" ||
+      name === "dental_kit_count" ||
+      name === "kabayoshi_count" ||
+      name === "lingual_button_count"
+    ) {
+      updateAdditionalChargesTotal();
+    }
+  });
+
+  // If we're in editing mode, make sure to calculate the additional charges total on mount
+  useEffect(() => {
+    if (isEditing && initialData) {
+      // We need to calculate the total on mount for editing mode
+      const timer = setTimeout(() => {
+        updateAdditionalChargesTotal();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Fetch the next appointment number and patient details when the component mounts
   useEffect(() => {
@@ -773,6 +885,225 @@ const OrthodonticTreatmentRecordForm: React.FC<
                 </div>
               </div>
             )}
+
+            {/* Additional Charges */}
+            <div className="bg-white p-5 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-medium text-gray-800 mb-4 border-b pb-2">
+                Additional Charges
+              </h3>
+
+              <div className="grid grid-cols-1 gap-y-3">
+                <div className="grid grid-cols-4 gap-4 items-center">
+                  <div className="text-sm font-medium text-gray-700">
+                    Recement Bracket (₱100)
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="recement_bracket_count"
+                    render={({ field }) => (
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          className="w-16 h-9 text-center border-gray-300 rounded-md"
+                          value={
+                            field.value === undefined
+                              ? "0"
+                              : field.value.toString()
+                          }
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            field.onChange(value);
+                            updateAdditionalChargesTotal();
+                          }}
+                        />
+                      </FormControl>
+                    )}
+                  />
+
+                  <div className="text-sm font-medium text-gray-700">
+                    Replacement Bracket (₱500)
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="replacement_bracket_count"
+                    render={({ field }) => (
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          className="w-16 h-9 text-center border-gray-300 rounded-md"
+                          value={
+                            field.value === undefined
+                              ? "0"
+                              : field.value.toString()
+                          }
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            field.onChange(value);
+                            updateAdditionalChargesTotal();
+                          }}
+                        />
+                      </FormControl>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-4 gap-4 items-center">
+                  <div className="text-sm font-medium text-gray-700">
+                    Rebracket (₱500)
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="rebracket_count"
+                    render={({ field }) => (
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          className="w-16 h-9 text-center border-gray-300 rounded-md"
+                          value={
+                            field.value === undefined
+                              ? "0"
+                              : field.value.toString()
+                          }
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            field.onChange(value);
+                            updateAdditionalChargesTotal();
+                          }}
+                        />
+                      </FormControl>
+                    )}
+                  />
+
+                  <div className="text-sm font-medium text-gray-700">
+                    X-ray (₱600)
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="xray_count"
+                    render={({ field }) => (
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          className="w-16 h-9 text-center border-gray-300 rounded-md"
+                          value={
+                            field.value === undefined
+                              ? "0"
+                              : field.value.toString()
+                          }
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            field.onChange(value);
+                            updateAdditionalChargesTotal();
+                          }}
+                        />
+                      </FormControl>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-4 gap-4 items-center">
+                  <div className="text-sm font-medium text-gray-700">
+                    Dental Kit (₱200)
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="dental_kit_count"
+                    render={({ field }) => (
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          className="w-16 h-9 text-center border-gray-300 rounded-md"
+                          value={
+                            field.value === undefined
+                              ? "0"
+                              : field.value.toString()
+                          }
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            field.onChange(value);
+                            updateAdditionalChargesTotal();
+                          }}
+                        />
+                      </FormControl>
+                    )}
+                  />
+
+                  <div className="text-sm font-medium text-gray-700">
+                    Kabayoshi (₱200)
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="kabayoshi_count"
+                    render={({ field }) => (
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          className="w-16 h-9 text-center border-gray-300 rounded-md"
+                          value={
+                            field.value === undefined
+                              ? "0"
+                              : field.value.toString()
+                          }
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            field.onChange(value);
+                            updateAdditionalChargesTotal();
+                          }}
+                        />
+                      </FormControl>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-4 gap-4 items-center">
+                  <div className="text-sm font-medium text-gray-700">
+                    Lingual Button (₱200)
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="lingual_button_count"
+                    render={({ field }) => (
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          className="w-16 h-9 text-center border-gray-300 rounded-md"
+                          value={
+                            field.value === undefined
+                              ? "0"
+                              : field.value.toString()
+                          }
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            field.onChange(value);
+                            updateAdditionalChargesTotal();
+                          }}
+                        />
+                      </FormControl>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Hidden field for total - we still need this for database storage */}
+              <input
+                type="hidden"
+                {...form.register("additional_charges_total")}
+              />
+            </div>
 
             {/* Payment Information */}
             <div className="bg-gray-50 p-4 rounded-lg">

@@ -65,7 +65,7 @@ app.on("ready", () => {
     },
     fullscreen: true,
     resizable: false,
-    minimizable: true,
+    minimizable: false,
     maximizable: false,
   });
 

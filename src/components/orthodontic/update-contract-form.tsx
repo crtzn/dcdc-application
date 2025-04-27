@@ -127,7 +127,7 @@ const UpdateContractForm: React.FC<UpdateContractFormProps> = ({
             </p>
           </div>
           <div className="bg-white p-3 rounded-md shadow-sm">
-            <p className="text-sm text-gray-500">Current Balance</p>
+            <p className="text-sm text-gray-500">Contract Balance</p>
             <p className="text-xl font-bold text-red-600">
               ₱
               {currentBalance.toLocaleString(undefined, {
